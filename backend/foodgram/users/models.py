@@ -1,8 +1,8 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 
-from .validators import validate_username
 from .constants import USERNAME_MAX_LENGTH
+from .validators import validate_username
 
 
 class NewUser(AbstractUser):

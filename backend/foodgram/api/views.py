@@ -1,13 +1,11 @@
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.decorators import action
-from rest_framework.response import Response
 from django.contrib.auth import get_user_model
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 
-
-from .serializers import RegisterUserSerializer
 from .pagination import UserPageNumberPagination
-
+from .serializers import RegisterUserSerializer
 
 User = get_user_model()
 
@@ -17,7 +15,7 @@ class NewUserViewSet(ModelViewSet):
     serializer_class = RegisterUserSerializer
     permission_classes = (AllowAny,)
     pagination_class = UserPageNumberPagination
-    http_method_names = ['get', 'post']
+    http_method_names = ["get", "post"]
 
     @action(
         detail=False,

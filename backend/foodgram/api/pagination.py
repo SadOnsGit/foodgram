@@ -5,5 +5,5 @@ from .constants import MAX_PAGE_SIZE, PAGE_SIZE
 
 class UserPageNumberPagination(PageNumberPagination):
     page_size = PAGE_SIZE
-    page_size_query_param = 'limit'
+    page_size_query_param = "limit"
     max_page_size = MAX_PAGE_SIZE
