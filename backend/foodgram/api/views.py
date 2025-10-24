@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from .pagination import UserPageNumberPagination
-from .serializers import RegisterUserSerializer
+from .serializers import RegisterUserSerializer, GetUserSerializer
 
 User = get_user_model()
 
@@ -23,6 +23,7 @@ class NewUserViewSet(ModelViewSet):
         url_path="me",
         url_name="me",
         permission_classes=[IsAuthenticated],
+        serializer_class=GetUserSerializer
     )
     def me(self, request, *args, **kwargs):
         # if request.method == "PATCH":

@@ -27,24 +27,24 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            username=validated_data["username"],
-            email=validated_data["email"],
-            first_name=validated_data["first_name"],
-            last_name=validated_data["last_name"],
-            password=validated_data["password"],
+            username=validated_data['username'],
+            email=validated_data['email'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+            password=validated_data['password'],
         )
         return user
 
     class Meta:
         model = User
-        fields = ("email", "username", "first_name", "last_name", "password")
+        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'password', 'avatar')
 
 
 class GetUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("email", "username", "first_name", "last_name")
+        fields = ('email', 'username', 'first_name', 'last_name', 'avatar')
 
 
 class NewTokenObtainPairSerializer(serializers.Serializer):
@@ -52,11 +52,11 @@ class NewTokenObtainPairSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        email = attrs.get("email")
-        password = attrs.get("password")
+        email = attrs.get('email')
+        password = attrs.get('password')
 
         user = authenticate(email=email, password=password)
         if user is None:
-            raise serializers.ValidationError("Invalid credentials")
+            raise serializers.ValidationError('Invalid credentials')
         access_token = AccessToken.for_user(user)
-        return {"auth_token": str(access_token)}
+        return {'auth_token': str(access_token)}

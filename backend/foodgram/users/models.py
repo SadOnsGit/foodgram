@@ -16,4 +16,12 @@ class NewUser(AbstractUser):
     )
     email = models.EmailField(
         unique=True,
+        error_messages={
+            "unique": ("Пользователь с таким email уже существует!"),
+        },
+    )
+    avatar = models.ImageField(
+        upload_to='media',
+        blank=True,
+        null=True
     )
