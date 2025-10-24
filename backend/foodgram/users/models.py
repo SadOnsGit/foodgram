@@ -14,3 +14,6 @@ class NewUser(AbstractUser):
             "unique": ("Пользователь с таким username уже существует!"),
         },
     )
+    email = models.EmailField(
+        unique=True,
+    )

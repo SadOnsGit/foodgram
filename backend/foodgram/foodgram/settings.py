@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'djoser',
 
     'api.apps.ApiConfig',
+    'users.apps.UsersConfig',
 ]
 
 MIDDLEWARE = [
@@ -102,4 +103,19 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
+    "TOKEN_OBTAIN_SERIALIZER": "api.serializers.NewTokenObtainPairSerializer",
 }
+
+AUTH_USER_MODEL = "users.NewUser"
+
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'SERIALIZERS': {
+        'token': 'api.serializers.NewTokenObtainPairSerializer',
+    },
+}
+
+
+AUTHENTICATION_BACKENDS = [
+    'api.backends.EmailBackend',
+]
