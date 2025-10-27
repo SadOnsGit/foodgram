@@ -3,16 +3,18 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from django.db.models import Exists, OuterRef
 
 from .pagination import UserPageNumberPagination
-from .serializers import RegisterUserSerializer, GetUserSerializer
+from .serializers import UserSerializer, GetUserSerializer
+from users.models import Follow
 
 User = get_user_model()
 
 
 class NewUserViewSet(ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = RegisterUserSerializer
+    serializer_class = UserSerializer
     permission_classes = (AllowAny,)
     pagination_class = UserPageNumberPagination
     http_method_names = ["get", "post", "put", "delete"]
@@ -20,10 +22,18 @@ class NewUserViewSet(ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         return Response(
-            {"detail": "DELETE method is not allowed for this endpoint."},
+            {"detail": "Method Not Allowed"},
             status=405
         )
-
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            return User.objects.annotate(
+                is_subscribed=Exists(
+                    Follow.objects.filter(user=user, following=OuterRef('pk'))
+                )
+            )
+        return User.objects.all()
     @action(
         detail=False,
         methods=["get", "put", "delete"],

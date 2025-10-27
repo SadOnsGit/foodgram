@@ -13,7 +13,7 @@ from .constants import (
 User = get_user_model()
 
 
-class RegisterUserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         max_length=MAX_EMAIL_LENGTH,
     )
@@ -26,6 +26,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
     )
+    is_subscribed = serializers.BooleanField(read_only=True)
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -37,9 +38,10 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         )
         return user
 
+
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'password', 'avatar')
+        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'password', 'is_subscribed', 'avatar')
 
 
 class GetUserSerializer(serializers.ModelSerializer):
