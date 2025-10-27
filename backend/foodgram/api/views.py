@@ -15,22 +15,23 @@ class NewUserViewSet(ModelViewSet):
     serializer_class = RegisterUserSerializer
     permission_classes = (AllowAny,)
     pagination_class = UserPageNumberPagination
-    http_method_names = ["get", "post"]
+    http_method_names = ["get", "post", "put"]
 
     @action(
         detail=False,
-        methods=["get", "patch"],
+        methods=["get", "put"],
         url_path="me",
         url_name="me",
         permission_classes=[IsAuthenticated],
         serializer_class=GetUserSerializer
     )
     def me(self, request, *args, **kwargs):
-        # if request.method == "PATCH":
-        #     serializer = self.get_serializer(
-        #         request.user, data=request.data, partial=True
-        #     )
-        #     serializer.is_valid(raise_exception=True)
-        #     return Response(serializer.data)
+        if request.method == "PUT":
+            serializer = self.get_serializer(
+                request.user, data=request.data, partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)

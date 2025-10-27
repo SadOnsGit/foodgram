@@ -6,9 +6,6 @@ from .constants import USERNAME_MAX_LENGTH
 from .validators import validate_username
 
 
-User = get_user_model()
-
-
 class NewUser(AbstractUser):
     username = models.CharField(
         max_length=USERNAME_MAX_LENGTH,
@@ -25,7 +22,7 @@ class NewUser(AbstractUser):
         },
     )
     avatar = models.ImageField(
-        upload_to='media',
+        upload_to='users/',
         blank=True,
         null=True
     )
@@ -33,12 +30,12 @@ class NewUser(AbstractUser):
 
 class Follow(models.Model):
     user = models.ForeignKey(
-        User,
+        NewUser,
         on_delete=models.CASCADE,
         related_name='followers'
     )
     following = models.ForeignKey(
-        User,
+        NewUser,
         on_delete=models.CASCADE,
         related_name='following'
     )

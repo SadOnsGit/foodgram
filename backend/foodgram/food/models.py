@@ -44,7 +44,7 @@ class Receipts(models.Model):
         verbose_name='Название рецепта'
     )
     image = models.ImageField(
-        upload_to='media/receipts/'
+        upload_to='receipts/'
         verbose_name='Картинка рецепта'
     )
     description = models.TextField(

@@ -2,6 +2,8 @@ from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
 
+from .fields import Base64ImageField
+
 from .constants import (
     MAX_EMAIL_LENGTH,
     MAX_FIRST_NAME_LENGTH,
@@ -41,6 +43,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
 
 class GetUserSerializer(serializers.ModelSerializer):
+    avatar = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User

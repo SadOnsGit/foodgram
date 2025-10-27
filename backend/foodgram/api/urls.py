@@ -9,7 +9,7 @@ v1_router.register("users", NewUserViewSet)
 
 urlpatterns = [
     path(
-        "auth/token/login",
+        "auth/token/login/",
         TokenObtainPairView.as_view(),
         name="token_obtain_pair",
     ),
