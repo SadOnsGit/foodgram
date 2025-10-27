@@ -35,10 +35,14 @@ class Receipts(models.Model):
         upload_to='media/receipts/'
         verbose_name='Картинка рецепта'
     )
-    description = models.TextField()
+    description = models.TextField(
+        verbose_name='Описание'
+    )
     ingredients = models.ManyToManyField(
-        Ingredients
+        Ingredients,
+        verbose_name='Ингредиенты'
     )
     tag = models.ManyToManyField(
-        Tags
+        Tags,
+        verbose_name='Тэг'
     )
