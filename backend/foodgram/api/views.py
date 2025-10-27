@@ -15,11 +15,18 @@ class NewUserViewSet(ModelViewSet):
     serializer_class = RegisterUserSerializer
     permission_classes = (AllowAny,)
     pagination_class = UserPageNumberPagination
-    http_method_names = ["get", "post", "put"]
+    http_method_names = ["get", "post", "put", "delete"]
+
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {"detail": "DELETE method is not allowed for this endpoint."},
+            status=405
+        )
 
     @action(
         detail=False,
-        methods=["get", "put"],
+        methods=["get", "put", "delete"],
         url_path="me",
         url_name="me",
         permission_classes=[IsAuthenticated],
@@ -33,5 +40,11 @@ class NewUserViewSet(ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
+        
+        elif request.method == "DELETE":
+            request.user.avatar = None
+            request.user.save()
+            return Response(status=204)
+        
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
