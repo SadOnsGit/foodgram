@@ -8,17 +8,29 @@ class Tags(models.Model):
     name = models.CharField(
         max_length=25,
         unique=True,
+        verbose_name='Название тега'
     )
     slug = models.SlugField(
         unique=True,
+        verbose_name='Слаг'
     )
 
 
 class Ingredients(models.Model):
+    class UnitMeasurement(models.TextChoices):
+        KG = 'кг', 'Киллограмм'
+        MG = 'мг', 'Миллиграм'
+        G = 'г', 'грамм'
     name = models.CharField(
         max_length=50,
+        verbose_name='Ингредиенты'
     )
-    unit = models.TextChoices()
+    unit = models.CharField(
+        max_length=2,
+        choices=UnitMeasurement.choices,
+        default=UnitMeasurement.G,
+        verbose_name='Единица измерения'
+    )
 
 
 class Receipts(models.Model):
@@ -45,4 +57,27 @@ class Receipts(models.Model):
     tag = models.ManyToManyField(
         Tags,
         verbose_name='Тэг'
+    )
+
+
+class Purchases(models.Model):
+    buyer = models.ManyToManyField(
+        User,
+        verbose_name='Покупатель'
+    )
+    purchases = models.ManyToManyField(
+        Receipts,
+        verbose_name='Покупки'
+    )
+
+
+class FavoriteReceipts(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Пользователь'
+    )
+    favorite_receipts = models.ManyToManyField(
+        Receipts,
+        verbose_name='Избранное рецептов'
     )

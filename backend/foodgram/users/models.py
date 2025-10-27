@@ -1,8 +1,12 @@
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
 from django.db import models
 
 from .constants import USERNAME_MAX_LENGTH
 from .validators import validate_username
+
+
+User = get_user_model()
 
 
 class NewUser(AbstractUser):
@@ -25,3 +29,28 @@ class NewUser(AbstractUser):
         blank=True,
         null=True
     )
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='followers'
+    )
+    following = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following'
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'following'],
+                name='unique_user_following'
+            ),
+            models.CheckConstraint(
+                name="%(app_label)s_%(class)s_prevent_self_follow",
+                check=~models.Q(user=models.F("following")),
+            ),
+        ]
