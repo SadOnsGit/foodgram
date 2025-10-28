@@ -65,3 +65,8 @@ class NewTokenObtainPairSerializer(serializers.Serializer):
             raise serializers.ValidationError('Invalid credentials')
         access_token = AccessToken.for_user(user)
         return {'auth_token': str(access_token)}
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)

@@ -3,10 +3,12 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.views import APIView
+from django.contrib.auth.hashers import make_password
 from django.db.models import Exists, OuterRef
 
 from .pagination import UserPageNumberPagination
-from .serializers import UserSerializer, GetUserSerializer
+from .serializers import UserSerializer, GetUserSerializer, ChangePasswordSerializer
 from users.models import Follow
 
 User = get_user_model()
@@ -58,3 +60,20 @@ class NewUserViewSet(ModelViewSet):
         
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
+
+
+class SetPassword(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            if not user.check_password(serializer.validated_data['current_password']):
+                return Response({'current_password': ['Wrong password.']}, status=400)
+
+            user.password = make_password(serializer.validated_data['new_password'])
+            user.save()
+            return Response(status=204)
+        
+        return Response(serializer.errors, status=400)
