@@ -2,14 +2,13 @@ from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .fields import Base64ImageField
-from food.models import Tags
-
 from .constants import (
     MAX_EMAIL_LENGTH,
     MAX_FIRST_NAME_LENGTH,
     MAX_LAST_NAME_LENGTH,
 )
+from .fields import Base64ImageField
+from food.models import FavoriteReceipts, Ingredients, Receipts, Tags
 
 User = get_user_model()
 
@@ -31,18 +30,26 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            password=validated_data['password'],
+            username=validated_data["username"],
+            email=validated_data["email"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
+            password=validated_data["password"],
         )
         return user
 
-
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'password', 'is_subscribed', 'avatar')
+        fields = (
+            "email",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "password",
+            "is_subscribed",
+            "avatar",
+        )
 
 
 class GetUserSerializer(serializers.ModelSerializer):
@@ -50,7 +57,7 @@ class GetUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'first_name', 'last_name', 'avatar')
+        fields = ("email", "username", "first_name", "last_name", "avatar")
 
 
 class NewTokenObtainPairSerializer(serializers.Serializer):
@@ -58,14 +65,14 @@ class NewTokenObtainPairSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        email = attrs.get('email')
-        password = attrs.get('password')
+        email = attrs.get("email")
+        password = attrs.get("password")
 
         user = authenticate(email=email, password=password)
         if user is None:
-            raise serializers.ValidationError('Invalid credentials')
+            raise serializers.ValidationError("Invalid credentials")
         access_token = AccessToken.for_user(user)
-        return {'auth_token': str(access_token)}
+        return {"auth_token": str(access_token)}
 
 
 class ChangePasswordSerializer(serializers.Serializer):
@@ -73,9 +80,44 @@ class ChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True)
 
 
-class TagSerialiezr(serializers.ModelSerializer):
-    
+class TagSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tags
-        fields = ('id', 'name', 'slug')
+        fields = ("id", "name", "slug")
+
+
+class ReceiptSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        slug_field="username",
+        read_only=True
+    )
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
+
+    def get_is_favorited(self, obj):
+        user = self.context["request"].user
+        if user.is_authenticated:
+            return obj.favorited_by.filter(user=user).exists()
+        return False
+
+    def get_is_in_shopping_cart(self, obj):
+        user = self.context["request"].user
+        if user.is_authenticated:
+            return obj.purchases_by.filter(buyer=user).exists()
+        return False
+
+    class Meta:
+        model = Receipts
+        fields = (
+            "id",
+            "tags",
+            "author",
+            "ingredients",
+            "is_favorited",
+            "is_in_shopping_cart",
+            "name",
+            "image",
+            "text",
+            "cooking_time",
+        )

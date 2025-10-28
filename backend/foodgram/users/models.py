@@ -1,5 +1,5 @@
-from django.contrib.auth.models import AbstractUser
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from .constants import USERNAME_MAX_LENGTH
@@ -21,30 +21,21 @@ class NewUser(AbstractUser):
             "unique": ("Пользователь с таким email уже существует!"),
         },
     )
-    avatar = models.ImageField(
-        upload_to='users/',
-        blank=True,
-        null=True
-    )
+    avatar = models.ImageField(upload_to="users/", blank=True, null=True)
 
 
 class Follow(models.Model):
     user = models.ForeignKey(
-        NewUser,
-        on_delete=models.CASCADE,
-        related_name='followers'
+        NewUser, on_delete=models.CASCADE, related_name="followers"
     )
     following = models.ForeignKey(
-        NewUser,
-        on_delete=models.CASCADE,
-        related_name='following'
+        NewUser, on_delete=models.CASCADE, related_name="following"
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'following'],
-                name='unique_user_following'
+                fields=["user", "following"], name="unique_user_following"
             ),
             models.CheckConstraint(
                 name="%(app_label)s_%(class)s_prevent_self_follow",
