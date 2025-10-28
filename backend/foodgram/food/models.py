@@ -63,3 +63,9 @@ class FavoriteReceipts(models.Model):
         verbose_name="Избранное рецептов",
         related_name="favorited_by",
     )
+
+
+class IngredientInReceipt(models.Model):
+    receipt = models.ForeignKey(Receipts, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey(Ingredients, on_delete=models.CASCADE)
+    amount = models.PositiveSmallIntegerField()

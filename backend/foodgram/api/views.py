@@ -17,6 +17,7 @@ from .serializers import (
     ReceiptSerializer,
     TagSerializer,
     UserSerializer,
+    CreateReceiptSerializer
 )
 from food.models import FavoriteReceipts, Ingredients, Receipts, Tags
 from users.models import Follow
@@ -118,3 +119,11 @@ class ReceiptViewSet(ModelViewSet):
     pagination_class = UserPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ReceiptFilter
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_serializer_class(self):
+        if self.request.method in ['POST', 'PATCH']:
+            return CreateReceiptSerializer
+        return ReceiptSerializer
