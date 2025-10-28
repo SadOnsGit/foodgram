@@ -6,10 +6,12 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from django.contrib.auth.hashers import make_password
 from django.db.models import Exists, OuterRef
+from django.shortcuts import get_object_or_404
 
 from .pagination import UserPageNumberPagination
-from .serializers import UserSerializer, GetUserSerializer, ChangePasswordSerializer
+from .serializers import UserSerializer, GetUserSerializer, ChangePasswordSerializer, TagSerialiezr
 from users.models import Follow
+from food.models import Tags
 
 User = get_user_model()
 
@@ -77,3 +79,19 @@ class SetPassword(APIView):
             return Response(status=204)
         
         return Response(serializer.errors, status=400)
+
+
+class TagsListView(APIView):
+
+    def get(self, request):
+        tags = Tags.objects.all()
+        serializer = TagSerialiezr(tags, many=True)
+        return Response(serializer.data)
+
+
+class TagsRetrieveView(APIView):
+
+    def get(self, request, pk):
+        tag = get_object_or_404(Tags, pk=pk)
+        serializer = TagSerialiezr(tag)
+        return Response(serializer.data)

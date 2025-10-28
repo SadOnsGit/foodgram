@@ -3,6 +3,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
 
 from .fields import Base64ImageField
+from food.models import Tags
 
 from .constants import (
     MAX_EMAIL_LENGTH,
@@ -70,3 +71,11 @@ class NewTokenObtainPairSerializer(serializers.Serializer):
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
+
+
+class TagSerialiezr(serializers.ModelSerializer):
+    
+
+    class Meta:
+        model = Tags
+        fields = ('id', 'name', 'slug')

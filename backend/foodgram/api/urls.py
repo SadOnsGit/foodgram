@@ -2,7 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .views import NewUserViewSet, SetPassword
+from .views import NewUserViewSet, SetPassword, TagsListView, TagsRetrieveView
 
 v1_router = DefaultRouter()
 v1_router.register("users", NewUserViewSet)
@@ -17,6 +17,16 @@ urlpatterns = [
         'users/set_password/',
         SetPassword.as_view(),
         name='set_password'
+    ),
+    path(
+        'tags/',
+        TagsListView.as_view(),
+        name='tags_list'
+    ),
+    path(
+        'tags/<int:pk>/',
+        TagsRetrieveView.as_view(),
+        name='tags_obj'
     ),
     path("", include(v1_router.urls)),
 ]
