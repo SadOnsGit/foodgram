@@ -48,20 +48,6 @@ class Purchases(models.Model):
     )
 
 
-class FavoriteReceipts(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name="Пользователь",
-        related_name="favorite_receipts",
-    )
-    favorite_receipts = models.ManyToManyField(
-        Receipts,
-        verbose_name="Избранное рецептов",
-        related_name="favorited_by",
-    )
-
-
 class IngredientInReceipt(models.Model):
     receipt = models.ForeignKey(Receipts, on_delete=models.CASCADE, related_name='receipt_ingredients')
     ingredient = models.ForeignKey(Ingredients, on_delete=models.CASCADE)

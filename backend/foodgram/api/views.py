@@ -19,7 +19,7 @@ from .serializers import (
     UserSerializer,
     CreateReceiptSerializer
 )
-from food.models import FavoriteReceipts, Ingredients, Receipts, Tags
+from food.models import Receipts, Tags
 from users.models import Follow
 
 User = get_user_model()
@@ -127,3 +127,32 @@ class ReceiptViewSet(ModelViewSet):
         if self.request.method in ['POST', 'PATCH']:
             return CreateReceiptSerializer
         return ReceiptSerializer
+
+
+class FavoriteReceiptView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        receipt = get_object_or_404(Receipts, pk=pk)
+        user = self.request.user
+        if not user.favorite_receipts.filter(pk=receipt.pk).exists():
+            user.favorite_receipts.add(receipt)
+            return Response(
+                {
+                    "id": receipt.pk,
+                    "name": receipt.name,
+                    "image": request.build_absolute_uri(receipt.image.url),
+                    "cooking_time": receipt.cooking_time
+                },
+                status=201
+            )
+        return Response({"message": "Рецепт уже находится в избранном"}, status=400)
+    
+
+    def delete(self, request, pk):
+        receipt = get_object_or_404(Receipts, pk=pk)
+        user = self.request.user
+        if user.favorite_receipts.filter(pk=receipt.pk).exists():
+            user.favorite_receipts.remove(receipt)
+            return Response({"message": "Рецепт удален из избранного"}, status=204)
+        return Response({"message": "Рецепт не находится в избранном"}, status=400)

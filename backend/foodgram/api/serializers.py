@@ -8,7 +8,7 @@ from .constants import (
     MAX_LAST_NAME_LENGTH,
 )
 from .fields import Base64ImageField
-from food.models import FavoriteReceipts, Ingredients, Receipts, Tags, IngredientInReceipt
+from food.models import Ingredients, Receipts, Tags, IngredientInReceipt
 
 User = get_user_model()
 
@@ -204,3 +204,4 @@ class CreateReceiptSerializer(serializers.ModelSerializer):
             'text',
             'cooking_time'
         )
+

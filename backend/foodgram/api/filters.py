@@ -20,7 +20,8 @@ class ReceiptFilter(django_filters.FilterSet):
 
     def filter_in_favorites(self, queryset, name, value):
         if value == "1":
-            return queryset.filter(favoritereceipts__user=self.request.user)
+            user = self.request.user
+            return user.favorited_receipts.all()
         return queryset
 
     class Meta:
