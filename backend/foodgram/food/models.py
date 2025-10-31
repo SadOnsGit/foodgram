@@ -35,9 +35,6 @@ class Receipts(models.Model):
         upload_to="receipts/", verbose_name="Картинка рецепта"
     )
     text = models.TextField(verbose_name="Описание")
-    ingredients = models.ManyToManyField(
-        Ingredients, verbose_name="Ингредиенты"
-    )
     tags = models.ManyToManyField(Tags, verbose_name="Тэг")
     cooking_time = models.IntegerField()
 
@@ -66,6 +63,6 @@ class FavoriteReceipts(models.Model):
 
 
 class IngredientInReceipt(models.Model):
-    receipt = models.ForeignKey(Receipts, on_delete=models.CASCADE)
+    receipt = models.ForeignKey(Receipts, on_delete=models.CASCADE, related_name='receipt_ingredients')
     ingredient = models.ForeignKey(Ingredients, on_delete=models.CASCADE)
     amount = models.PositiveSmallIntegerField()

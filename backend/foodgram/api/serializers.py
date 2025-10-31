@@ -87,10 +87,21 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "slug")
 
 
+class IngredientInReceiptSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(source='ingredient.measurement_unit')
+
+    class Meta:
+        model = IngredientInReceipt
+        fields = ('id', 'name', 'measurement_unit', 'amount')
+
+
 class ReceiptSerializer(serializers.ModelSerializer):
     author = UserSerializer()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
+    ingredients = serializers.SerializerMethodField()
     tags = TagSerializer(many=True)
     image = Base64ImageField(required=True)
 
@@ -105,6 +116,12 @@ class ReceiptSerializer(serializers.ModelSerializer):
         if user.is_authenticated:
             return obj.purchases_by.filter(buyer=user).exists()
         return False
+    
+    
+    def get_ingredients(self, obj):
+        queryset = obj.receipt_ingredients.all()
+        return IngredientInReceiptSerializer(queryset, many=True).data
+
 
 
     class Meta:
@@ -139,24 +156,42 @@ class CreateReceiptSerializer(serializers.ModelSerializer):
         read_only=True
     )
     image = Base64ImageField(required=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tags.objects.all(),
+        many=True
+    )
     ingredients = IngredientAmountSerializer(many=True)
 
+
+    def to_representation(self, instance):
+        return ReceiptSerializer(
+            instance,
+            context=self.context
+        ).data
+
     def validate(self, data):
-        if not data['ingredients']:
+        ingredients = data.get('ingredients')
+        if not ingredients:
             raise serializers.ValidationError('Укажите хотя бы один ингредиент')
         return data
 
     def create(self, validated_data):
-        ingredients = validated_data.pop('ingredients')
-        tags = validated_data.pop('tags')
+        ingredients_data = validated_data.pop('ingredients')
+        tags_data = validated_data.pop('tags')
+        validated_data['author'] = self.context['request'].user
         receipt = Receipts.objects.create(**validated_data)
-        receipt.tags.set(tags)
-        for item in ingredients:
-            IngredientInReceipt.objects.create(
-                receipt=receipt,
-                ingredient_id=item['id'],
-                amount=item['amount']
+        receipt.tags.set(tags_data)
+        ingredient_objects = []
+        for item in ingredients_data:
+            ingredient_objects.append(
+                IngredientInReceipt(
+                    receipt=receipt,
+                    ingredient_id=item['id'],
+                    amount=item['amount']
+                )
             )
+        IngredientInReceipt.objects.bulk_create(ingredient_objects)
+
         return receipt
 
     class Meta:
