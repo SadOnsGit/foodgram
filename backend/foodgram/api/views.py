@@ -112,7 +112,7 @@ class TagsRetrieveView(APIView):
 
 class ReceiptViewSet(ModelViewSet):
     queryset = Receipts.objects.all().prefetch_related(
-        "favorited_by", "purchases_by"
+        "favorited_receipts", "purchased_receipts"
     )
     serializer_class = ReceiptSerializer
     permission_classes = (IsAuthenticated,)
@@ -156,3 +156,32 @@ class FavoriteReceiptView(APIView):
             user.favorite_receipts.remove(receipt)
             return Response({"message": "Рецепт удален из избранного"}, status=204)
         return Response({"message": "Рецепт не находится в избранном"}, status=400)
+
+
+class PurchasedReceiptView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        receipt = get_object_or_404(Receipts, pk=pk)
+        user = self.request.user
+        if not user.purchases.filter(pk=receipt.pk).exists():
+            user.purchases.add(receipt)
+            return Response(
+                {
+                    "id": receipt.pk,
+                    "name": receipt.name,
+                    "image": request.build_absolute_uri(receipt.image.url),
+                    "cooking_time": receipt.cooking_time
+                },
+                status=201
+            )
+        return Response({"message": "Рецепт уже находится в списке покупок"}, status=400)
+    
+
+    def delete(self, request, pk):
+        receipt = get_object_or_404(Receipts, pk=pk)
+        user = self.request.user
+        if user.purchases.filter(pk=receipt.pk).exists():
+            user.purchases.remove(receipt)
+            return Response({"message": "Рецепт удален из списка покупок"}, status=204)
+        return Response({"message": "Рецепт не находится в списке покупок"}, status=400)

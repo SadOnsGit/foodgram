@@ -107,20 +107,18 @@ class ReceiptSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         user = self.context["request"].user
         if user.is_authenticated:
-            return obj.favorited_by.filter(user=user).exists()
+            return user.favorite_receipts.filter(pk=obj.pk).exists()
         return False
 
     def get_is_in_shopping_cart(self, obj):
         user = self.context["request"].user
         if user.is_authenticated:
-            return obj.purchases_by.filter(buyer=user).exists()
+            return user.purchases.filter(pk=obj.pk).exists()
         return False
-    
     
     def get_ingredients(self, obj):
         queryset = obj.receipt_ingredients.all()
         return IngredientInReceiptSerializer(queryset, many=True).data
-
 
 
     class Meta:

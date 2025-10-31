@@ -15,7 +15,8 @@ class ReceiptFilter(django_filters.FilterSet):
 
     def filter_in_shopping_list(self, queryset, name, value):
         if value == "1":
-            return queryset.filter(purchases__buyer=self.request.user)
+            user = self.request.user
+            return user.purchased_receipts.all()
         return queryset
 
     def filter_in_favorites(self, queryset, name, value):

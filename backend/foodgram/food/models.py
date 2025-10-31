@@ -39,15 +39,6 @@ class Receipts(models.Model):
     cooking_time = models.IntegerField()
 
 
-class Purchases(models.Model):
-    buyer = models.ManyToManyField(
-        User, verbose_name="Покупатель", related_name="purchases_receipts"
-    )
-    purchases = models.ManyToManyField(
-        Receipts, verbose_name="Покупки", related_name="purchases_by"
-    )
-
-
 class IngredientInReceipt(models.Model):
     receipt = models.ForeignKey(Receipts, on_delete=models.CASCADE, related_name='receipt_ingredients')
     ingredient = models.ForeignKey(Ingredients, on_delete=models.CASCADE)

@@ -8,7 +8,8 @@ from .views import (
     SetPassword,
     TagsListView,
     TagsRetrieveView,
-    FavoriteReceiptView
+    FavoriteReceiptView,
+    PurchasedReceiptView
 )
 
 v1_router = DefaultRouter()
@@ -25,5 +26,6 @@ urlpatterns = [
     path("tags/", TagsListView.as_view(), name="tags_list"),
     path("tags/<int:pk>/", TagsRetrieveView.as_view(), name="tags_obj"),
     path('recipes/<int:pk>/favorite/', FavoriteReceiptView.as_view()),
+    path('recipes/<int:pk>/shopping_cart/', PurchasedReceiptView.as_view()),
     path("", include(v1_router.urls)),
 ]
