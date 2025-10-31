@@ -48,7 +48,6 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "password",
             "is_subscribed",
-            "avatar",
         )
 
 
