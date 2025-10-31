@@ -40,6 +40,8 @@ class Receipts(models.Model):
 
 
 class IngredientInReceipt(models.Model):
-    receipt = models.ForeignKey(Receipts, on_delete=models.CASCADE, related_name='receipt_ingredients')
+    receipt = models.ForeignKey(
+        Receipts, on_delete=models.CASCADE, related_name="receipt_ingredients"
+    )
     ingredient = models.ForeignKey(Ingredients, on_delete=models.CASCADE)
     amount = models.PositiveSmallIntegerField()

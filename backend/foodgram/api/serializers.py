@@ -8,7 +8,7 @@ from .constants import (
     MAX_LAST_NAME_LENGTH,
 )
 from .fields import Base64ImageField
-from food.models import Ingredients, Receipts, Tags, IngredientInReceipt
+from food.models import IngredientInReceipt, Ingredients, Receipts, Tags
 
 User = get_user_model()
 
@@ -87,13 +87,15 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class IngredientInReceiptSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField(source='ingredient.id')
-    name = serializers.ReadOnlyField(source='ingredient.name')
-    measurement_unit = serializers.ReadOnlyField(source='ingredient.measurement_unit')
+    id = serializers.ReadOnlyField(source="ingredient.id")
+    name = serializers.ReadOnlyField(source="ingredient.name")
+    measurement_unit = serializers.ReadOnlyField(
+        source="ingredient.measurement_unit"
+    )
 
     class Meta:
         model = IngredientInReceipt
-        fields = ('id', 'name', 'measurement_unit', 'amount')
+        fields = ("id", "name", "measurement_unit", "amount")
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
@@ -115,11 +117,10 @@ class ReceiptSerializer(serializers.ModelSerializer):
         if user.is_authenticated:
             return user.purchases.filter(pk=obj.pk).exists()
         return False
-    
+
     def get_ingredients(self, obj):
         queryset = obj.receipt_ingredients.all()
         return IngredientInReceiptSerializer(queryset, many=True).data
-
 
     class Meta:
         model = Receipts
@@ -149,33 +150,29 @@ class IngredientAmountSerializer(serializers.Serializer):
 
 class CreateReceiptSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
-        slug_field="username",
-        read_only=True
+        slug_field="username", read_only=True
     )
     image = Base64ImageField(required=True)
     tags = serializers.PrimaryKeyRelatedField(
-        queryset=Tags.objects.all(),
-        many=True
+        queryset=Tags.objects.all(), many=True
     )
     ingredients = IngredientAmountSerializer(many=True)
 
-
     def to_representation(self, instance):
-        return ReceiptSerializer(
-            instance,
-            context=self.context
-        ).data
+        return ReceiptSerializer(instance, context=self.context).data
 
     def validate(self, data):
-        ingredients = data.get('ingredients')
+        ingredients = data.get("ingredients")
         if not ingredients:
-            raise serializers.ValidationError('Укажите хотя бы один ингредиент')
+            raise serializers.ValidationError(
+                "Укажите хотя бы один ингредиент"
+            )
         return data
 
     def create(self, validated_data):
-        ingredients_data = validated_data.pop('ingredients')
-        tags_data = validated_data.pop('tags')
-        validated_data['author'] = self.context['request'].user
+        ingredients_data = validated_data.pop("ingredients")
+        tags_data = validated_data.pop("tags")
+        validated_data["author"] = self.context["request"].user
         receipt = Receipts.objects.create(**validated_data)
         receipt.tags.set(tags_data)
         ingredient_objects = []
@@ -183,8 +180,8 @@ class CreateReceiptSerializer(serializers.ModelSerializer):
             ingredient_objects.append(
                 IngredientInReceipt(
                     receipt=receipt,
-                    ingredient_id=item['id'],
-                    amount=item['amount']
+                    ingredient_id=item["id"],
+                    amount=item["amount"],
                 )
             )
         IngredientInReceipt.objects.bulk_create(ingredient_objects)
@@ -194,12 +191,11 @@ class CreateReceiptSerializer(serializers.ModelSerializer):
     class Meta:
         model = Receipts
         fields = (
-            'author',
-            'ingredients',
-            'tags',
-            'image',
-            'name',
-            'text',
-            'cooking_time'
+            "author",
+            "ingredients",
+            "tags",
+            "image",
+            "name",
+            "text",
+            "cooking_time",
         )
-
