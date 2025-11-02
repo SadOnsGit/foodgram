@@ -13,7 +13,36 @@ from food.models import IngredientInReceipt, Ingredients, Receipts, Tags
 User = get_user_model()
 
 
-class UserSerializer(serializers.ModelSerializer):
+class CreateUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        max_length=MAX_EMAIL_LENGTH,
+    )
+    first_name = serializers.CharField(
+        max_length=MAX_FIRST_NAME_LENGTH,
+    )
+    last_name = serializers.CharField(
+        max_length=MAX_LAST_NAME_LENGTH,
+    )
+    password = serializers.CharField(
+        write_only=True,
+    )
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
+
+    class Meta:
+        model = User
+        fields = (
+            "email",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "password",
+        )
+
+
+class DetailUserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         max_length=MAX_EMAIL_LENGTH,
     )
@@ -28,16 +57,6 @@ class UserSerializer(serializers.ModelSerializer):
     )
     is_subscribed = serializers.BooleanField(read_only=True)
 
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            username=validated_data["username"],
-            email=validated_data["email"],
-            first_name=validated_data["first_name"],
-            last_name=validated_data["last_name"],
-            password=validated_data["password"],
-        )
-        return user
-
     class Meta:
         model = User
         fields = (
@@ -48,6 +67,7 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "password",
             "is_subscribed",
+            "avatar",
         )
 
 
@@ -56,7 +76,15 @@ class GetUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("email", "username", "first_name", "last_name", "avatar")
+        fields = ("email", "id", "username", "first_name", "last_name", "avatar")
+
+
+class UpdateAvatarSerializer(serializers.ModelSerializer):
+    avatar = Base64ImageField(required=True, allow_null=True)
+
+    class Meta:
+        model = User
+        fields = ("avatar",)
 
 
 class NewTokenObtainPairSerializer(serializers.Serializer):
@@ -99,7 +127,7 @@ class IngredientInReceiptSerializer(serializers.ModelSerializer):
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
-    author = UserSerializer()
+    author = DetailUserSerializer()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     ingredients = serializers.SerializerMethodField()

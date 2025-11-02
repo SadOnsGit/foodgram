@@ -17,7 +17,9 @@ from .serializers import (
     GetUserSerializer,
     ReceiptSerializer,
     TagSerializer,
-    UserSerializer,
+    CreateUserSerializer,
+    DetailUserSerializer,
+    UpdateAvatarSerializer,
 )
 from food.models import Receipts, Tags
 from users.models import Follow
@@ -27,7 +29,6 @@ User = get_user_model()
 
 class NewUserViewSet(ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
     permission_classes = (AllowAny,)
     pagination_class = UserPageNumberPagination
     http_method_names = ["get", "post", "put", "delete"]
@@ -45,15 +46,37 @@ class NewUserViewSet(ModelViewSet):
             )
         return User.objects.all()
 
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CreateUserSerializer
+        if self.action in ['retrieve', 'list', 'me']:
+            return DetailUserSerializer
+        if self.action == 'avatar_actions':
+            return UpdateAvatarSerializer
+        return DetailUserSerializer
+
     @action(
         detail=False,
-        methods=["get", "put", "delete"],
+        methods=["get"],
         url_path="me",
         url_name="me",
         permission_classes=[IsAuthenticated],
-        serializer_class=GetUserSerializer,
+        serializer_class=DetailUserSerializer,
     )
     def me(self, request, *args, **kwargs):
+        user = self.get_queryset().get(pk=request.user.pk)
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+
+    @action(
+        detail=False,
+        methods=["put", "delete"],
+        url_path="me/avatar",
+        url_name="avatar_actions",
+        permission_classes=[IsAuthenticated],
+        serializer_class=UpdateAvatarSerializer,
+    )
+    def avatar_actions(self, request, *args, **kwargs):
         if request.method == "PUT":
             serializer = self.get_serializer(
                 request.user, data=request.data, partial=True
