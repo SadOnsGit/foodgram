@@ -9,6 +9,7 @@ from .constants import (
 )
 from .fields import Base64ImageField
 from food.models import IngredientInReceipt, Ingredients, Receipts, Tags
+from users.models import Follow
 
 User = get_user_model()
 
@@ -192,7 +193,6 @@ class CreateReceiptSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         ingredients_data = validated_data.pop("ingredients")
         tags_data = validated_data.pop("tags")
-        validated_data["author"] = self.context["request"].user
         receipt = Receipts.objects.create(**validated_data)
         receipt.tags.set(tags_data)
         ingredient_objects = []
@@ -223,7 +223,35 @@ class CreateReceiptSerializer(serializers.ModelSerializer):
 
 class IngredientSerializer(serializers.ModelSerializer):
 
-
     class Meta:
         model = Ingredients
-        fields = '__all__'
+        fields = "__all__"
+
+
+class RecipeShortSerializer(serializers.ModelSerializer):
+    
+
+    class Meta:
+        model = Receipts
+        fields = ("id", "name", "image", "cooking_time")
+
+
+
+class FollowUserSerializer(serializers.ModelSerializer):
+    recipes_count = serializers.IntegerField(read_only=True)
+    receipts = RecipeShortSerializer(many=True, read_only=True)
+    is_subscribed = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            "email",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "is_subscribed",
+            "receipts",
+            "recipes_count",
+            "avatar",
+        )

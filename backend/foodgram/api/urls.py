@@ -4,18 +4,18 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .views import (
     FavoriteReceiptView,
+    IngredientsViewSet,
     NewUserViewSet,
     PurchasedReceiptView,
     ReceiptViewSet,
     SetPassword,
-    TagsListView,
-    TagsRetrieveView,
-    IngredientsViewSet,
+    TagsReadOnlyViewSet,
 )
 
 v1_router = DefaultRouter()
 v1_router.register("users", NewUserViewSet)
 v1_router.register("recipes", ReceiptViewSet)
+v1_router.register("tags", TagsReadOnlyViewSet)
 v1_router.register("ingredients", IngredientsViewSet)
 
 urlpatterns = [
@@ -25,8 +25,6 @@ urlpatterns = [
         name="token_obtain_pair",
     ),
     path("users/set_password/", SetPassword.as_view(), name="set_password"),
-    path("tags/", TagsListView.as_view(), name="tags_list"),
-    path("tags/<int:pk>/", TagsRetrieveView.as_view(), name="tags_obj"),
     path("recipes/<int:pk>/favorite/", FavoriteReceiptView.as_view()),
     path("recipes/<int:pk>/shopping_cart/", PurchasedReceiptView.as_view()),
     path("", include(v1_router.urls)),

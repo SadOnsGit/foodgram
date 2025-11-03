@@ -28,7 +28,10 @@ class Ingredients(models.Model):
 
 class Receipts(models.Model):
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, verbose_name="Автор"
+        User,
+        on_delete=models.CASCADE,
+        related_name='receipts',
+        verbose_name="Автор"
     )
     name = models.CharField(max_length=150, verbose_name="Название рецепта")
     image = models.ImageField(

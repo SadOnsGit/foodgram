@@ -32,10 +32,10 @@ class NewUser(AbstractUser):
 
 class Follow(models.Model):
     user = models.ForeignKey(
-        NewUser, on_delete=models.CASCADE, related_name="followers"
+        NewUser, on_delete=models.CASCADE, related_name="following"
     )
     following = models.ForeignKey(
-        NewUser, on_delete=models.CASCADE, related_name="following"
+        NewUser, on_delete=models.CASCADE, related_name="followers"
     )
 
     class Meta:

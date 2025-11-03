@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Count
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
@@ -14,15 +14,17 @@ from .pagination import UserPageNumberPagination
 from .serializers import (
     ChangePasswordSerializer,
     CreateReceiptSerializer,
-    ReceiptSerializer,
-    TagSerializer,
     CreateUserSerializer,
     DetailUserSerializer,
+    IngredientSerializer,
+    ReceiptSerializer,
+    TagSerializer,
     UpdateAvatarSerializer,
-    IngredientSerializer
+    FollowUserSerializer,
 )
-from food.models import Receipts, Tags, Ingredients
+from food.models import Ingredients, Receipts, Tags
 from users.models import Follow
+from .permissions import IsAuthorOrReadOnly
 
 User = get_user_model()
 
@@ -42,16 +44,17 @@ class NewUserViewSet(ModelViewSet):
             return User.objects.annotate(
                 is_subscribed=Exists(
                     Follow.objects.filter(user=user, following=OuterRef("pk"))
-                )
-            )
+                ),
+                recipes_count=Count('receipts', distinct=True)
+            ).prefetch_related('receipts')
         return User.objects.all()
 
     def get_serializer_class(self):
-        if self.action == 'create':
+        if self.action == "create":
             return CreateUserSerializer
-        if self.action in ['retrieve', 'list', 'me']:
+        if self.action in ["retrieve", "list", "me"]:
             return DetailUserSerializer
-        if self.action == 'avatar_actions':
+        if self.action == "avatar_actions":
             return UpdateAvatarSerializer
         return DetailUserSerializer
 
@@ -93,8 +96,48 @@ class NewUserViewSet(ModelViewSet):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
+    @action(
+        detail=True,
+        methods=["post", "delete"],
+        url_path="subscribe",
+        permission_classes=[IsAuthenticated],
+    )
+    def subscribe(self, request, pk=None):
+        following = get_object_or_404(self.get_queryset(), pk=pk)
+        user = request.user
+
+        if request.method == 'POST':
+            if user == following:
+                return Response(
+                    {"detail": "Нельзя подписаться на самого себя!"},
+                    status=400
+                )
+            if Follow.objects.filter(user=user, following=following).exists():
+                return Response({"detail": "Вы уже подписаны!"}, status=400)
+
+            Follow.objects.create(user=user, following=following)
+            serializer = FollowUserSerializer(following, context={'request': request})
+            return Response(serializer.data, status=201)
+
+        elif request.method == 'DELETE':
+            get_object_or_404(Follow, user=user, following=following).delete()
+            return Response(status=204)
+
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="subscriptions",
+        permission_classes=[IsAuthenticated],
+    )
+    def subscriptions(self, request):
+        follows = request.user.following.all()
+        serializer = FollowUserSerializer(follows, context={'request': request}, many=True)
+        return Response(serializer.data, status=200)
+
 
 class SetPassword(APIView):
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -117,20 +160,9 @@ class SetPassword(APIView):
         return Response(serializer.errors, status=400)
 
 
-class TagsListView(APIView):
-
-    def get(self, request):
-        tags = Tags.objects.all()
-        serializer = TagSerializer(tags, many=True)
-        return Response(serializer.data)
-
-
-class TagsRetrieveView(APIView):
-
-    def get(self, request, pk):
-        tag = get_object_or_404(Tags, pk=pk)
-        serializer = TagSerializer(tag)
-        return Response(serializer.data)
+class TagsReadOnlyViewSet(ReadOnlyModelViewSet):
+    queryset = Tags.objects.all()
+    serializer_class = TagSerializer
 
 
 class ReceiptViewSet(ModelViewSet):
@@ -138,7 +170,7 @@ class ReceiptViewSet(ModelViewSet):
         "favorited_receipts", "purchased_receipts"
     )
     serializer_class = ReceiptSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
     pagination_class = UserPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ReceiptFilter
