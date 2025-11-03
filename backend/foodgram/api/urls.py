@@ -10,11 +10,13 @@ from .views import (
     SetPassword,
     TagsListView,
     TagsRetrieveView,
+    IngredientsViewSet,
 )
 
 v1_router = DefaultRouter()
 v1_router.register("users", NewUserViewSet)
 v1_router.register("recipes", ReceiptViewSet)
+v1_router.register("ingredients", IngredientsViewSet)
 
 urlpatterns = [
     path(

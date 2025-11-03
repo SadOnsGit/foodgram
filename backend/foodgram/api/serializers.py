@@ -71,14 +71,6 @@ class DetailUserSerializer(serializers.ModelSerializer):
         )
 
 
-class GetUserSerializer(serializers.ModelSerializer):
-    avatar = Base64ImageField(required=False, allow_null=True)
-
-    class Meta:
-        model = User
-        fields = ("email", "id", "username", "first_name", "last_name", "avatar")
-
-
 class UpdateAvatarSerializer(serializers.ModelSerializer):
     avatar = Base64ImageField(required=True, allow_null=True)
 
@@ -227,3 +219,11 @@ class CreateReceiptSerializer(serializers.ModelSerializer):
             "text",
             "cooking_time",
         )
+
+
+class IngredientSerializer(serializers.ModelSerializer):
+
+
+    class Meta:
+        model = Ingredients
+        fields = '__all__'

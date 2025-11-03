@@ -7,21 +7,21 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from .filters import ReceiptFilter
 from .pagination import UserPageNumberPagination
 from .serializers import (
     ChangePasswordSerializer,
     CreateReceiptSerializer,
-    GetUserSerializer,
     ReceiptSerializer,
     TagSerializer,
     CreateUserSerializer,
     DetailUserSerializer,
     UpdateAvatarSerializer,
+    IngredientSerializer
 )
-from food.models import Receipts, Tags
+from food.models import Receipts, Tags, Ingredients
 from users.models import Follow
 
 User = get_user_model()
@@ -218,3 +218,8 @@ class PurchasedReceiptView(APIView):
         return Response(
             {"message": "Рецепт не находится в списке покупок"}, status=400
         )
+
+
+class IngredientsViewSet(ReadOnlyModelViewSet):
+    queryset = Ingredients.objects.all()
+    serializer_class = IngredientSerializer
