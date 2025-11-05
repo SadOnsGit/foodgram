@@ -9,7 +9,6 @@ from .constants import (
 )
 from .fields import Base64ImageField
 from food.models import IngredientInReceipt, Ingredients, Receipts, Tags
-from users.models import Follow
 
 User = get_user_model()
 

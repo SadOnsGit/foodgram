@@ -16,6 +16,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework_simplejwt.views import TokenBlacklistView
 
 from .filters import ReceiptFilter
 from .pagination import UserPageNumberPagination
@@ -322,3 +323,10 @@ class DownloadShoppingCartUser(APIView):
             'attachment; filename="shopping_cart.pdf"'
         )
         return response
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        return Response({"detail": "Выход выполнен успешно."}, status=200)

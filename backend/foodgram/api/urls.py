@@ -11,6 +11,7 @@ from .views import (
     ReceiptViewSet,
     SetPassword,
     TagsReadOnlyViewSet,
+    LogoutView,
 )
 
 v1_router = DefaultRouter()
@@ -24,6 +25,10 @@ urlpatterns = [
         "auth/token/login/",
         TokenObtainPairView.as_view(),
         name="token_obtain_pair",
+    ),
+    path(
+        "auth/token/logout/",
+        LogoutView.as_view(),
     ),
     path("users/set_password/", SetPassword.as_view(), name="set_password"),
     path("recipes/<int:pk>/favorite/", FavoriteReceiptView.as_view()),
