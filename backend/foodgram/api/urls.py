@@ -10,6 +10,7 @@ from .views import (
     ReceiptViewSet,
     SetPassword,
     TagsReadOnlyViewSet,
+    DownloadShoppingCartUser,
 )
 
 v1_router = DefaultRouter()
@@ -27,5 +28,6 @@ urlpatterns = [
     path("users/set_password/", SetPassword.as_view(), name="set_password"),
     path("recipes/<int:pk>/favorite/", FavoriteReceiptView.as_view()),
     path("recipes/<int:pk>/shopping_cart/", PurchasedReceiptView.as_view()),
+    path("recipes/download_shopping_cart/", DownloadShoppingCartUser.as_view()),
     path("", include(v1_router.urls)),
 ]
