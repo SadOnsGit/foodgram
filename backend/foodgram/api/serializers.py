@@ -28,9 +28,11 @@ class CreateUserSerializer(serializers.ModelSerializer):
     )
 
     def create(self, validated_data):
-        email = validated_data['email']
+        email = validated_data["email"]
         if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError({'email': 'Данный e-mail уже зарегистрирован!'})
+            raise serializers.ValidationError(
+                {"email": "Данный e-mail уже зарегистрирован!"}
+            )
         return User.objects.create_user(**validated_data)
 
     class Meta:

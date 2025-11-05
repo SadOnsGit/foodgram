@@ -6,12 +6,12 @@ from .views import (
     DownloadShoppingCartUser,
     FavoriteReceiptView,
     IngredientsViewSet,
+    LogoutView,
     NewUserViewSet,
     PurchasedReceiptView,
     ReceiptViewSet,
     SetPassword,
     TagsReadOnlyViewSet,
-    LogoutView,
 )
 
 v1_router = DefaultRouter()

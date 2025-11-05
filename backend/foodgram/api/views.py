@@ -59,7 +59,7 @@ class NewUserViewSet(ModelViewSet):
         return User.objects.all()
 
     def get_permissions(self):
-        if self.action in ['update']:
+        if self.action in ["update"]:
             self.permission_classes = [IsUserOrReadOnly]
         return super().get_permissions()
 
