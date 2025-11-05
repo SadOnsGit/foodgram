@@ -16,13 +16,13 @@ class ReceiptFilter(django_filters.FilterSet):
     def filter_in_shopping_list(self, queryset, name, value):
         if value == "1":
             user = self.request.user
-            return user.purchased_receipts.all()
+            return user.purchases.all()
         return queryset
 
     def filter_in_favorites(self, queryset, name, value):
         if value == "1":
             user = self.request.user
-            return user.favorited_receipts.all()
+            return user.favorite_receipts.all()
         return queryset
 
     class Meta:

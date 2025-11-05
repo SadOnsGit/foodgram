@@ -19,7 +19,7 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from .filters import ReceiptFilter
 from .pagination import UserPageNumberPagination
-from .permissions import IsAuthorOrReadOnly
+from .permissions import IsAuthorOrReadOnly, IsUserOrReadOnly
 from .serializers import (
     ChangePasswordSerializer,
     CreateReceiptSerializer,
@@ -56,6 +56,11 @@ class NewUserViewSet(ModelViewSet):
                 recipes_count=Count("receipts", distinct=True),
             ).prefetch_related("receipts")
         return User.objects.all()
+
+    def get_permissions(self):
+        if self.action in ['update']:
+            self.permission_classes = [IsUserOrReadOnly]
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.action == "create":
