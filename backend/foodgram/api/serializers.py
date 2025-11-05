@@ -229,12 +229,10 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeShortSerializer(serializers.ModelSerializer):
-    
 
     class Meta:
         model = Receipts
         fields = ("id", "name", "image", "cooking_time")
-
 
 
 class FollowUserSerializer(serializers.ModelSerializer):

@@ -1,37 +1,38 @@
+import os
+from io import BytesIO
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
-from django.db.models import Exists, OuterRef, Count
+from django.db.models import Count, Exists, OuterRef
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from io import BytesIO
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-from django.http import HttpResponse
-import os
 
 from .filters import ReceiptFilter
 from .pagination import UserPageNumberPagination
+from .permissions import IsAuthorOrReadOnly
 from .serializers import (
     ChangePasswordSerializer,
     CreateReceiptSerializer,
     CreateUserSerializer,
     DetailUserSerializer,
+    FollowUserSerializer,
     IngredientSerializer,
     ReceiptSerializer,
     TagSerializer,
     UpdateAvatarSerializer,
-    FollowUserSerializer,
 )
 from food.models import Ingredients, Receipts, Tags
 from users.models import Follow
-from .permissions import IsAuthorOrReadOnly
 
 User = get_user_model()
 
@@ -52,8 +53,8 @@ class NewUserViewSet(ModelViewSet):
                 is_subscribed=Exists(
                     Follow.objects.filter(user=user, following=OuterRef("pk"))
                 ),
-                recipes_count=Count('receipts', distinct=True)
-            ).prefetch_related('receipts')
+                recipes_count=Count("receipts", distinct=True),
+            ).prefetch_related("receipts")
         return User.objects.all()
 
     def get_serializer_class(self):
@@ -113,23 +114,24 @@ class NewUserViewSet(ModelViewSet):
         following = get_object_or_404(self.get_queryset(), pk=pk)
         user = request.user
 
-        if request.method == 'POST':
+        if request.method == "POST":
             if user == following:
                 return Response(
                     {"detail": "Нельзя подписаться на самого себя!"},
-                    status=400
+                    status=400,
                 )
             if Follow.objects.filter(user=user, following=following).exists():
                 return Response({"detail": "Вы уже подписаны!"}, status=400)
 
             Follow.objects.create(user=user, following=following)
-            serializer = FollowUserSerializer(following, context={'request': request})
+            serializer = FollowUserSerializer(
+                following, context={"request": request}
+            )
             return Response(serializer.data, status=201)
 
-        elif request.method == 'DELETE':
+        elif request.method == "DELETE":
             get_object_or_404(Follow, user=user, following=following).delete()
             return Response(status=204)
-
 
     @action(
         detail=False,
@@ -139,7 +141,9 @@ class NewUserViewSet(ModelViewSet):
     )
     def subscriptions(self, request):
         follows = request.user.following.all()
-        serializer = FollowUserSerializer(follows, context={'request': request}, many=True)
+        serializer = FollowUserSerializer(
+            follows, context={"request": request}, many=True
+        )
         return Response(serializer.data, status=200)
 
 
@@ -264,7 +268,6 @@ class IngredientsViewSet(ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
 
 
-
 class DownloadShoppingCartUser(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -273,9 +276,9 @@ class DownloadShoppingCartUser(APIView):
         p = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
 
-        font_path = os.path.join('fonts', 'DejaVuSans.ttf')
-        pdfmetrics.registerFont(TTFont('DejaVu', font_path))
-        p.setFont('DejaVu', 12)
+        font_path = os.path.join("fonts", "DejaVuSans.ttf")
+        pdfmetrics.registerFont(TTFont("DejaVu", font_path))
+        p.setFont("DejaVu", 12)
 
         all_obj_shopping_cart = self.request.user.purchases.all()
         p.drawString(100, height - 100, "Список покупок рецептов")
@@ -288,13 +291,19 @@ class DownloadShoppingCartUser(APIView):
             y_position -= 20
             p.drawString(100, y_position, f"Описание: {receipt.text}")
             y_position -= 20
-            p.drawString(100, y_position, f"Время готовки: {receipt.cooking_time} minutes")
+            p.drawString(
+                100,
+                y_position,
+                f"Время готовки: {receipt.cooking_time} minutes",
+            )
             y_position -= 20
             p.drawString(100, y_position, f"Изображение: ")
             y_position -= 20
             if receipt.image:
                 image_path = receipt.image.path
-                p.drawImage(image_path, 100, y_position - 100, width=200, height=100)
+                p.drawImage(
+                    image_path, 100, y_position - 100, width=200, height=100
+                )
                 y_position -= 120
             else:
                 y_position -= 60
@@ -303,6 +312,8 @@ class DownloadShoppingCartUser(APIView):
         p.save()
         buffer.seek(0)
 
-        response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="shopping_cart.pdf"'
+        response = HttpResponse(buffer, content_type="application/pdf")
+        response["Content-Disposition"] = (
+            'attachment; filename="shopping_cart.pdf"'
+        )
         return response
