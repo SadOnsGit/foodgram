@@ -5,8 +5,9 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.db.models import Count, Exists, OuterRef
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, HttpResponseRedirect
 from django_filters.rest_framework import DjangoFilterBackend
+from django.urls import reverse
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -16,7 +17,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from rest_framework_simplejwt.views import TokenBlacklistView
 
 from .filters import ReceiptFilter
 from .pagination import UserPageNumberPagination
@@ -36,6 +36,15 @@ from food.models import Ingredients, Receipts, Tags
 from users.models import Follow
 
 User = get_user_model()
+
+
+def redirect_to_receipt(request, recipe_short_code):
+    recipe = get_object_or_404(Receipts, short_code=recipe_short_code)
+    return HttpResponseRedirect(
+        request.build_absolute_uri(
+            f'/recipe/{recipe.id}/'
+        )
+    )
 
 
 class NewUserViewSet(ModelViewSet):
@@ -199,6 +208,19 @@ class ReceiptViewSet(ModelViewSet):
         if self.request.method in ["POST", "PATCH"]:
             return CreateReceiptSerializer
         return ReceiptSerializer
+
+    @action(
+        methods=('get',),
+        detail=True,
+        permission_classes=(AllowAny,),
+        url_path='get-link'
+    )
+    def get_link(self, request, pk):
+        receipt = get_object_or_404(Receipts, pk=pk)
+        relative_url = reverse('redirect_to_receipt', args=[receipt.short_code])
+        full_url = request.build_absolute_uri(relative_url)
+
+        return Response({'short-link': full_url}, status=200)
 
 
 class FavoriteReceiptView(APIView):

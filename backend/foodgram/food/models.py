@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from .constants import SHORT_CODE_URLS_MAX_LENGTH
+
 User = get_user_model()
 
 
@@ -40,6 +42,11 @@ class Receipts(models.Model):
     text = models.TextField(verbose_name="Описание")
     tags = models.ManyToManyField(Tags, verbose_name="Тэг")
     cooking_time = models.IntegerField()
+    short_code = models.CharField(
+        max_length=SHORT_CODE_URLS_MAX_LENGTH,
+        verbose_name='Короткий код',
+        unique=True,
+    )
 
 
 class IngredientInReceipt(models.Model):
