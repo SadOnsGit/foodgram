@@ -86,15 +86,13 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-      - name: Debug: List files
+      - name: Debug: Check if file exists
         run: |
-          echo "=== Текущая директория ==="
+          echo "=== Рабочая директория ==="
           pwd
-          echo "=== Содержимое корня ==="
-          ls -la
           echo "=== Содержимое infra/ ==="
-          ls -la infra/ || echo "Папка infra/ не найдена"
-          echo "=== Ищем docker-compose.production.yml ==="
+          ls -la infra/
+          echo "=== Полный путь к файлу ==="
           find . -name "docker-compose.production.yml" -type f
       - name: Copy docker-compose.yml via ssh
         uses: appleboy/scp-action@master
