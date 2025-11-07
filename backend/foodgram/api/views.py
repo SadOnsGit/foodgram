@@ -348,7 +348,6 @@ class DownloadShoppingCartUser(APIView):
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        return Response({"detail": "Выход выполнен успешно."}, status=200)
+        return Response({"detail": "Выход выполнен успешно."}, status=204)
