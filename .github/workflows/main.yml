@@ -86,7 +86,7 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-      - name: Debug: Check if file exists
+      - name: Check if file exists
         run: |
           echo "=== Рабочая директория ==="
           pwd
