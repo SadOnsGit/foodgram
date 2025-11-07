@@ -44,7 +44,7 @@ class Receipts(models.Model):
     cooking_time = models.IntegerField()
     short_code = models.CharField(
         max_length=SHORT_CODE_URLS_MAX_LENGTH,
-        verbose_name='Короткий код',
+        verbose_name="Короткий код",
         unique=True,
     )
 
