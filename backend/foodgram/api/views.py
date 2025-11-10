@@ -194,7 +194,7 @@ class ReceiptViewSet(ModelViewSet):
         "favorited_receipts", "purchased_receipts"
     )
     serializer_class = ReceiptSerializer
-    permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
+    permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = UserPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ReceiptFilter
