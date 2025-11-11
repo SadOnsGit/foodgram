@@ -279,6 +279,7 @@ class PurchasedRecipeView(APIView):
 
 class IngredientsViewSet(ReadOnlyModelViewSet):
     queryset = Ingredients.objects.all()
+    
     serializer_class = IngredientSerializer
 
 
