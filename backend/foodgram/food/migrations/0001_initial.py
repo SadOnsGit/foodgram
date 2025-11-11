@@ -25,9 +25,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "name",
-                    models.CharField(
-                        max_length=50, verbose_name="Ингредиенты"
-                    ),
+                    models.CharField(max_length=50, verbose_name="Ингредиенты"),
                 ),
                 (
                     "measurement_unit",
@@ -58,9 +56,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "name",
-                    models.CharField(
-                        max_length=150, verbose_name="Название рецепта"
-                    ),
+                    models.CharField(max_length=150, verbose_name="Название рецепта"),
                 ),
                 (
                     "image",

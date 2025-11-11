@@ -13,7 +13,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['84.201.155.162', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ["84.201.155.162", "localhost", "127.0.0.1"]
 
 
 INSTALLED_APPS = [
@@ -70,13 +70,13 @@ if DEBUG:
     }
 else:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('POSTGRES_DB', 'django'),
-            'USER': os.getenv('POSTGRES_USER', 'django'),
-            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', 'db'),
-            'PORT': os.getenv('DB_PORT', 5432)
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB", "django"),
+            "USER": os.getenv("POSTGRES_USER", "django"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
+            "HOST": os.getenv("DB_HOST", "db"),
+            "PORT": os.getenv("DB_PORT", 5432),
         }
     }
 
@@ -105,8 +105,8 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = '/backend_static/'
-STATIC_ROOT = BASE_DIR / 'collected_static'
+STATIC_URL = "/backend_static/"
+STATIC_ROOT = BASE_DIR / "collected_static"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

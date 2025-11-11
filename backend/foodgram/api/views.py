@@ -3,11 +3,13 @@ from io import BytesIO
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
-from django.db.models import Exists, OuterRef, Value, BooleanField, Count
+from django.db.models import BooleanField, Count, Exists, OuterRef, Value
 from django.http import HttpResponse
 from django.shortcuts import HttpResponseRedirect, get_object_or_404
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
+from food.constants import SHORT_CODE_URLS_MAX_LENGTH
+from food.models import Ingredients, Recipe, Tags
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -17,24 +19,16 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from users.models import Follow
 
 from .filters import RecipeFilter
 from .pagination import UserPageNumberPagination
 from .permissions import IsAuthorOrReadOnly, IsUserOrReadOnly
-from .serializers import (
-    ChangePasswordSerializer,
-    CreateRecipeSerializer,
-    CreateUserSerializer,
-    DetailUserSerializer,
-    FollowUserSerializer,
-    IngredientSerializer,
-    RecipeSerializer,
-    TagSerializer,
-    UpdateAvatarSerializer,
-)
-from food.models import Ingredients, Recipe, Tags
-from food.constants import SHORT_CODE_URLS_MAX_LENGTH
-from users.models import Follow
+from .serializers import (ChangePasswordSerializer, CreateRecipeSerializer,
+                          CreateUserSerializer, DetailUserSerializer,
+                          FollowUserSerializer, IngredientSerializer,
+                          RecipeSerializer, TagSerializer,
+                          UpdateAvatarSerializer)
 from .utils import generate_unique_short_code
 
 User = get_user_model()
@@ -42,9 +36,7 @@ User = get_user_model()
 
 def redirect_to_recipe(request, recipe_short_code):
     recipe = get_object_or_404(Recipe, short_code=recipe_short_code)
-    return HttpResponseRedirect(
-        request.build_absolute_uri(f"/recipe/{recipe.id}/")
-    )
+    return HttpResponseRedirect(request.build_absolute_uri(f"/recipe/{recipe.id}/"))
 
 
 class NewUserViewSet(ModelViewSet):
@@ -145,9 +137,7 @@ class NewUserViewSet(ModelViewSet):
                 return Response({"detail": "Вы уже подписаны!"}, status=400)
 
             Follow.objects.create(user=user, following=following)
-            serializer = FollowUserSerializer(
-                following, context={"request": request}
-            )
+            serializer = FollowUserSerializer(following, context={"request": request})
             return Response(serializer.data, status=201)
 
         elif request.method == "DELETE":
@@ -176,16 +166,10 @@ class SetPassword(APIView):
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             user = request.user
-            if not user.check_password(
-                serializer.validated_data["current_password"]
-            ):
-                return Response(
-                    {"current_password": ["Wrong password."]}, status=400
-                )
+            if not user.check_password(serializer.validated_data["current_password"]):
+                return Response({"current_password": ["Wrong password."]}, status=400)
 
-            user.password = make_password(
-                serializer.validated_data["new_password"]
-            )
+            user.password = make_password(serializer.validated_data["new_password"])
             user.save()
             return Response(status=204)
 
@@ -210,9 +194,9 @@ class RecipeViewSet(ModelViewSet):
     def perform_create(self, serializer):
         code = generate_unique_short_code(SHORT_CODE_URLS_MAX_LENGTH)
         serializer.save(author=self.request.user, short_code=code)
-    
+
     def get_permissions(self):
-        if self.request.method == 'POST':
+        if self.request.method == "POST":
             self.permission_classes = (IsAuthenticated,)
         return super().get_permissions()
 
@@ -229,9 +213,7 @@ class RecipeViewSet(ModelViewSet):
     )
     def get_link(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
-        relative_url = reverse(
-            "redirect_to_recipe", args=[recipe.short_code]
-        )
+        relative_url = reverse("redirect_to_recipe", args=[recipe.short_code])
         full_url = request.build_absolute_uri(relative_url)
 
         return Response({"short-link": full_url}, status=200)
@@ -254,21 +236,15 @@ class FavoriteRecipeView(APIView):
                 },
                 status=201,
             )
-        return Response(
-            {"message": "Рецепт уже находится в избранном"}, status=400
-        )
+        return Response({"message": "Рецепт уже находится в избранном"}, status=400)
 
     def delete(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
         if user.favorite_recipe.filter(pk=recipe.pk).exists():
             user.favorite_recipe.remove(recipe)
-            return Response(
-                {"message": "Рецепт удален из избранного"}, status=204
-            )
-        return Response(
-            {"message": "Рецепт не находится в избранном"}, status=400
-        )
+            return Response({"message": "Рецепт удален из избранного"}, status=204)
+        return Response({"message": "Рецепт не находится в избранном"}, status=400)
 
 
 class PurchasedRecipeView(APIView):
@@ -297,12 +273,8 @@ class PurchasedRecipeView(APIView):
         user = self.request.user
         if user.purchases.filter(pk=recipe.pk).exists():
             user.purchases.remove(recipe)
-            return Response(
-                {"message": "Рецепт удален из списка покупок"}, status=204
-            )
-        return Response(
-            {"message": "Рецепт не находится в списке покупок"}, status=400
-        )
+            return Response({"message": "Рецепт удален из списка покупок"}, status=204)
+        return Response({"message": "Рецепт не находится в списке покупок"}, status=400)
 
 
 class IngredientsViewSet(ReadOnlyModelViewSet):
@@ -343,9 +315,7 @@ class DownloadShoppingCartUser(APIView):
             y_position -= 20
             if recipe.image:
                 image_path = recipe.image.path
-                p.drawImage(
-                    image_path, 100, y_position - 100, width=200, height=100
-                )
+                p.drawImage(image_path, 100, y_position - 100, width=200, height=100)
                 y_position -= 120
             else:
                 y_position -= 60
@@ -355,9 +325,7 @@ class DownloadShoppingCartUser(APIView):
         buffer.seek(0)
 
         response = HttpResponse(buffer, content_type="application/pdf")
-        response["Content-Disposition"] = (
-            'attachment; filename="shopping_cart.pdf"'
-        )
+        response["Content-Disposition"] = 'attachment; filename="shopping_cart.pdf"'
         return response
 
 

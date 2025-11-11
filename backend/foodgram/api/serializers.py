@@ -1,14 +1,11 @@
 from django.contrib.auth import authenticate, get_user_model
+from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .constants import (
-    MAX_EMAIL_LENGTH,
-    MAX_FIRST_NAME_LENGTH,
-    MAX_LAST_NAME_LENGTH,
-)
+from .constants import (MAX_EMAIL_LENGTH, MAX_FIRST_NAME_LENGTH,
+                        MAX_LAST_NAME_LENGTH)
 from .fields import Base64ImageField
-from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 
 User = get_user_model()
 
@@ -114,9 +111,7 @@ class TagSerializer(serializers.ModelSerializer):
 class IngredientInRecipeSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source="ingredient.id")
     name = serializers.ReadOnlyField(source="ingredient.name")
-    measurement_unit = serializers.ReadOnlyField(
-        source="ingredient.measurement_unit"
-    )
+    measurement_unit = serializers.ReadOnlyField(source="ingredient.measurement_unit")
 
     class Meta:
         model = IngredientInRecipe
@@ -174,13 +169,9 @@ class IngredientAmountSerializer(serializers.Serializer):
 
 
 class CreateRecipeSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        slug_field="username", read_only=True
-    )
+    author = serializers.SlugRelatedField(slug_field="username", read_only=True)
     image = Base64ImageField(required=True)
-    tags = serializers.PrimaryKeyRelatedField(
-        queryset=Tags.objects.all(), many=True
-    )
+    tags = serializers.PrimaryKeyRelatedField(queryset=Tags.objects.all(), many=True)
     ingredients = IngredientAmountSerializer(many=True)
 
     def to_representation(self, instance):
@@ -189,9 +180,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
     def validate(self, data):
         ingredients = data.get("ingredients")
         if not ingredients:
-            raise serializers.ValidationError(
-                "Укажите хотя бы один ингредиент"
-            )
+            raise serializers.ValidationError("Укажите хотя бы один ингредиент")
         return data
 
     def create(self, validated_data):

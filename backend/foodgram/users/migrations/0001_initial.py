@@ -106,9 +106,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "avatar",
-                    models.ImageField(
-                        blank=True, null=True, upload_to="users/"
-                    ),
+                    models.ImageField(blank=True, null=True, upload_to="users/"),
                 ),
                 (
                     "favorite_recipe",

@@ -1,5 +1,4 @@
 import django_filters
-
 from food.models import Recipe
 
 
@@ -8,9 +7,7 @@ class RecipeFilter(django_filters.FilterSet):
         field_name="author__username", lookup_expr="icontains"
     )
     tag = django_filters.CharFilter(field_name="tag", lookup_expr="icontains")
-    in_shopping_list = django_filters.CharFilter(
-        method="filter_in_shopping_list"
-    )
+    in_shopping_list = django_filters.CharFilter(method="filter_in_shopping_list")
     in_favorites = django_filters.CharFilter(method="filter_in_favorites")
 
     def filter_in_shopping_list(self, queryset, name, value):

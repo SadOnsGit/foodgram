@@ -7,9 +7,7 @@ User = get_user_model()
 
 
 class Tags(models.Model):
-    name = models.CharField(
-        max_length=25, unique=True, verbose_name="Название тега"
-    )
+    name = models.CharField(max_length=25, unique=True, verbose_name="Название тега")
     slug = models.SlugField(unique=True, verbose_name="Слаг")
 
 
@@ -36,9 +34,7 @@ class Recipe(models.Model):
         verbose_name="Автор",
     )
     name = models.CharField(max_length=150, verbose_name="Название рецепта")
-    image = models.ImageField(
-        upload_to="recipe/", verbose_name="Картинка рецепта"
-    )
+    image = models.ImageField(upload_to="recipe/", verbose_name="Картинка рецепта")
     text = models.TextField(verbose_name="Описание")
     tags = models.ManyToManyField(Tags, verbose_name="Тэг")
     cooking_time = models.IntegerField()
