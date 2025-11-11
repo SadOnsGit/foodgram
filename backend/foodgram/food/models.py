@@ -20,7 +20,7 @@ class Ingredients(models.Model):
         G = "г", "грамм"
 
     name = models.CharField(max_length=50, verbose_name="Ингредиенты")
-    unit = models.CharField(
+    measurement_unit = models.CharField(
         max_length=2,
         choices=UnitMeasurement.choices,
         default=UnitMeasurement.G,
@@ -28,16 +28,16 @@ class Ingredients(models.Model):
     )
 
 
-class Receipts(models.Model):
+class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="receipts",
+        related_name="recipe",
         verbose_name="Автор",
     )
     name = models.CharField(max_length=150, verbose_name="Название рецепта")
     image = models.ImageField(
-        upload_to="receipts/", verbose_name="Картинка рецепта"
+        upload_to="recipe/", verbose_name="Картинка рецепта"
     )
     text = models.TextField(verbose_name="Описание")
     tags = models.ManyToManyField(Tags, verbose_name="Тэг")
@@ -49,9 +49,9 @@ class Receipts(models.Model):
     )
 
 
-class IngredientInReceipt(models.Model):
-    receipt = models.ForeignKey(
-        Receipts, on_delete=models.CASCADE, related_name="receipt_ingredients"
+class IngredientInRecipe(models.Model):
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, related_name="recipe_ingredients"
     )
     ingredient = models.ForeignKey(Ingredients, on_delete=models.CASCADE)
     amount = models.PositiveSmallIntegerField()

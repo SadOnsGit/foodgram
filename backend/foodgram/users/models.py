@@ -21,11 +21,11 @@ class NewUser(AbstractUser):
         },
     )
     avatar = models.ImageField(upload_to="users/", blank=True, null=True)
-    favorite_receipts = models.ManyToManyField(
-        "food.Receipts", related_name="favorited_receipts"
+    favorite_recipe = models.ManyToManyField(
+        "food.Recipe", related_name="favorited_recipe"
     )
     purchases = models.ManyToManyField(
-        "food.Receipts", related_name="purchased_receipts"
+        "food.Recipe", related_name="purchased_recipe"
     )
 
 

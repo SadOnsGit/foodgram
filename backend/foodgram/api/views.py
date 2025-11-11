@@ -3,7 +3,7 @@ from io import BytesIO
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
-from django.db.models import Count, Exists, OuterRef
+from django.db.models import Exists, OuterRef, Value, BooleanField, Count
 from django.http import HttpResponse
 from django.shortcuts import HttpResponseRedirect, get_object_or_404
 from django.urls import reverse
@@ -18,28 +18,30 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
-from .filters import ReceiptFilter
+from .filters import RecipeFilter
 from .pagination import UserPageNumberPagination
 from .permissions import IsAuthorOrReadOnly, IsUserOrReadOnly
 from .serializers import (
     ChangePasswordSerializer,
-    CreateReceiptSerializer,
+    CreateRecipeSerializer,
     CreateUserSerializer,
     DetailUserSerializer,
     FollowUserSerializer,
     IngredientSerializer,
-    ReceiptSerializer,
+    RecipeSerializer,
     TagSerializer,
     UpdateAvatarSerializer,
 )
-from food.models import Ingredients, Receipts, Tags
+from food.models import Ingredients, Recipe, Tags
+from food.constants import SHORT_CODE_URLS_MAX_LENGTH
 from users.models import Follow
+from .utils import generate_unique_short_code
 
 User = get_user_model()
 
 
-def redirect_to_receipt(request, recipe_short_code):
-    recipe = get_object_or_404(Receipts, short_code=recipe_short_code)
+def redirect_to_recipe(request, recipe_short_code):
+    recipe = get_object_or_404(Recipe, short_code=recipe_short_code)
     return HttpResponseRedirect(
         request.build_absolute_uri(f"/recipe/{recipe.id}/")
     )
@@ -56,14 +58,20 @@ class NewUserViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        queryset = User.objects.annotate(
+            recipes_count=Count("recipe", distinct=True),
+        ).prefetch_related("recipe")
         if user.is_authenticated:
-            return User.objects.annotate(
+            queryset = queryset.annotate(
                 is_subscribed=Exists(
                     Follow.objects.filter(user=user, following=OuterRef("pk"))
-                ),
-                recipes_count=Count("receipts", distinct=True),
-            ).prefetch_related("receipts")
-        return User.objects.all()
+                )
+            )
+        else:
+            queryset = queryset.annotate(
+                is_subscribed=Value(False, output_field=BooleanField())
+            )
+        return queryset
 
     def get_permissions(self):
         if self.action in ["update"]:
@@ -189,23 +197,29 @@ class TagsReadOnlyViewSet(ReadOnlyModelViewSet):
     serializer_class = TagSerializer
 
 
-class ReceiptViewSet(ModelViewSet):
-    queryset = Receipts.objects.all().prefetch_related(
-        "favorited_receipts", "purchased_receipts"
+class RecipeViewSet(ModelViewSet):
+    queryset = Recipe.objects.all().prefetch_related(
+        "favorited_recipe", "purchased_recipe"
     )
-    serializer_class = ReceiptSerializer
+    serializer_class = RecipeSerializer
     permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = UserPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
-    filterset_class = ReceiptFilter
+    filterset_class = RecipeFilter
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        code = generate_unique_short_code(SHORT_CODE_URLS_MAX_LENGTH)
+        serializer.save(author=self.request.user, short_code=code)
+    
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            self.permission_classes = (IsAuthenticated,)
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.request.method in ["POST", "PATCH"]:
-            return CreateReceiptSerializer
-        return ReceiptSerializer
+            return CreateRecipeSerializer
+        return RecipeSerializer
 
     @action(
         methods=("get",),
@@ -214,29 +228,29 @@ class ReceiptViewSet(ModelViewSet):
         url_path="get-link",
     )
     def get_link(self, request, pk):
-        receipt = get_object_or_404(Receipts, pk=pk)
+        recipe = get_object_or_404(Recipe, pk=pk)
         relative_url = reverse(
-            "redirect_to_receipt", args=[receipt.short_code]
+            "redirect_to_recipe", args=[recipe.short_code]
         )
         full_url = request.build_absolute_uri(relative_url)
 
         return Response({"short-link": full_url}, status=200)
 
 
-class FavoriteReceiptView(APIView):
+class FavoriteRecipeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        receipt = get_object_or_404(Receipts, pk=pk)
+        recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
-        if not user.favorite_receipts.filter(pk=receipt.pk).exists():
-            user.favorite_receipts.add(receipt)
+        if not user.favorite_recipe.filter(pk=recipe.pk).exists():
+            user.favorite_recipe.add(recipe)
             return Response(
                 {
-                    "id": receipt.pk,
-                    "name": receipt.name,
-                    "image": request.build_absolute_uri(receipt.image.url),
-                    "cooking_time": receipt.cooking_time,
+                    "id": recipe.pk,
+                    "name": recipe.name,
+                    "image": request.build_absolute_uri(recipe.image.url),
+                    "cooking_time": recipe.cooking_time,
                 },
                 status=201,
             )
@@ -245,10 +259,10 @@ class FavoriteReceiptView(APIView):
         )
 
     def delete(self, request, pk):
-        receipt = get_object_or_404(Receipts, pk=pk)
+        recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
-        if user.favorite_receipts.filter(pk=receipt.pk).exists():
-            user.favorite_receipts.remove(receipt)
+        if user.favorite_recipe.filter(pk=recipe.pk).exists():
+            user.favorite_recipe.remove(recipe)
             return Response(
                 {"message": "Рецепт удален из избранного"}, status=204
             )
@@ -257,20 +271,20 @@ class FavoriteReceiptView(APIView):
         )
 
 
-class PurchasedReceiptView(APIView):
+class PurchasedRecipeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        receipt = get_object_or_404(Receipts, pk=pk)
+        recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
-        if not user.purchases.filter(pk=receipt.pk).exists():
-            user.purchases.add(receipt)
+        if not user.purchases.filter(pk=recipe.pk).exists():
+            user.purchases.add(recipe)
             return Response(
                 {
-                    "id": receipt.pk,
-                    "name": receipt.name,
-                    "image": request.build_absolute_uri(receipt.image.url),
-                    "cooking_time": receipt.cooking_time,
+                    "id": recipe.pk,
+                    "name": recipe.name,
+                    "image": request.build_absolute_uri(recipe.image.url),
+                    "cooking_time": recipe.cooking_time,
                 },
                 status=201,
             )
@@ -279,10 +293,10 @@ class PurchasedReceiptView(APIView):
         )
 
     def delete(self, request, pk):
-        receipt = get_object_or_404(Receipts, pk=pk)
+        recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
-        if user.purchases.filter(pk=receipt.pk).exists():
-            user.purchases.remove(receipt)
+        if user.purchases.filter(pk=recipe.pk).exists():
+            user.purchases.remove(recipe)
             return Response(
                 {"message": "Рецепт удален из списка покупок"}, status=204
             )
@@ -312,23 +326,23 @@ class DownloadShoppingCartUser(APIView):
         p.drawString(100, height - 100, "Список покупок рецептов")
         y_position = height - 130
 
-        for receipt in all_obj_shopping_cart:
-            p.drawString(100, y_position, f"Номер: {receipt.id}")
+        for recipe in all_obj_shopping_cart:
+            p.drawString(100, y_position, f"Номер: {recipe.id}")
             y_position -= 20
-            p.drawString(100, y_position, f"Название: {receipt.name}")
+            p.drawString(100, y_position, f"Название: {recipe.name}")
             y_position -= 20
-            p.drawString(100, y_position, f"Описание: {receipt.text}")
+            p.drawString(100, y_position, f"Описание: {recipe.text}")
             y_position -= 20
             p.drawString(
                 100,
                 y_position,
-                f"Время готовки: {receipt.cooking_time} minutes",
+                f"Время готовки: {recipe.cooking_time} minutes",
             )
             y_position -= 20
             p.drawString(100, y_position, f"Изображение: ")
             y_position -= 20
-            if receipt.image:
-                image_path = receipt.image.path
+            if recipe.image:
+                image_path = recipe.image.path
                 p.drawImage(
                     image_path, 100, y_position - 100, width=200, height=100
                 )

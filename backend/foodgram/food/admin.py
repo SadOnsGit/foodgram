@@ -1,8 +1,8 @@
 from django.contrib import admin
 
-from .models import Tags, Ingredients, IngredientInReceipt, Receipts
+from .models import Tags, Ingredients, IngredientInRecipe, Recipe
 
 
 admin.site.register(
-    (Tags, IngredientInReceipt, Ingredients, Receipts)
+    (Tags, IngredientInRecipe, Ingredients, Recipe)
 )

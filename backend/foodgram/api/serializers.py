@@ -8,7 +8,7 @@ from .constants import (
     MAX_LAST_NAME_LENGTH,
 )
 from .fields import Base64ImageField
-from food.models import IngredientInReceipt, Ingredients, Receipts, Tags
+from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 
 User = get_user_model()
 
@@ -77,7 +77,7 @@ class DetailUserSerializer(serializers.ModelSerializer):
 
 
 class UpdateAvatarSerializer(serializers.ModelSerializer):
-    avatar = Base64ImageField(required=True, allow_null=True)
+    avatar = Base64ImageField(required=True, allow_null=False)
 
     class Meta:
         model = User
@@ -111,7 +111,7 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "slug")
 
 
-class IngredientInReceiptSerializer(serializers.ModelSerializer):
+class IngredientInRecipeSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source="ingredient.id")
     name = serializers.ReadOnlyField(source="ingredient.name")
     measurement_unit = serializers.ReadOnlyField(
@@ -119,11 +119,11 @@ class IngredientInReceiptSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = IngredientInReceipt
+        model = IngredientInRecipe
         fields = ("id", "name", "measurement_unit", "amount")
 
 
-class ReceiptSerializer(serializers.ModelSerializer):
+class RecipeSerializer(serializers.ModelSerializer):
     author = DetailUserSerializer()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -134,7 +134,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         user = self.context["request"].user
         if user.is_authenticated:
-            return user.favorite_receipts.filter(pk=obj.pk).exists()
+            return user.favorite_recipe.filter(pk=obj.pk).exists()
         return False
 
     def get_is_in_shopping_cart(self, obj):
@@ -144,11 +144,11 @@ class ReceiptSerializer(serializers.ModelSerializer):
         return False
 
     def get_ingredients(self, obj):
-        queryset = obj.receipt_ingredients.all()
-        return IngredientInReceiptSerializer(queryset, many=True).data
+        queryset = obj.recipe_ingredients.all()
+        return IngredientInRecipeSerializer(queryset, many=True).data
 
     class Meta:
-        model = Receipts
+        model = Recipe
         fields = (
             "id",
             "tags",
@@ -173,7 +173,7 @@ class IngredientAmountSerializer(serializers.Serializer):
         return value
 
 
-class CreateReceiptSerializer(serializers.ModelSerializer):
+class CreateRecipeSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         slug_field="username", read_only=True
     )
@@ -184,7 +184,7 @@ class CreateReceiptSerializer(serializers.ModelSerializer):
     ingredients = IngredientAmountSerializer(many=True)
 
     def to_representation(self, instance):
-        return ReceiptSerializer(instance, context=self.context).data
+        return RecipeSerializer(instance, context=self.context).data
 
     def validate(self, data):
         ingredients = data.get("ingredients")
@@ -197,23 +197,23 @@ class CreateReceiptSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         ingredients_data = validated_data.pop("ingredients")
         tags_data = validated_data.pop("tags")
-        receipt = Receipts.objects.create(**validated_data)
-        receipt.tags.set(tags_data)
+        recipe = Recipe.objects.create(**validated_data)
+        recipe.tags.set(tags_data)
         ingredient_objects = []
         for item in ingredients_data:
             ingredient_objects.append(
-                IngredientInReceipt(
-                    receipt=receipt,
+                IngredientInRecipe(
+                    recipe=recipe,
                     ingredient_id=item["id"],
                     amount=item["amount"],
                 )
             )
-        IngredientInReceipt.objects.bulk_create(ingredient_objects)
+        IngredientInRecipe.objects.bulk_create(ingredient_objects)
 
-        return receipt
+        return recipe
 
     class Meta:
-        model = Receipts
+        model = Recipe
         fields = (
             "author",
             "ingredients",
@@ -235,13 +235,13 @@ class IngredientSerializer(serializers.ModelSerializer):
 class RecipeShortSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Receipts
+        model = Recipe
         fields = ("id", "name", "image", "cooking_time")
 
 
 class FollowUserSerializer(serializers.ModelSerializer):
     recipes_count = serializers.IntegerField(read_only=True)
-    receipts = RecipeShortSerializer(many=True, read_only=True)
+    recipe = RecipeShortSerializer(many=True, read_only=True)
     is_subscribed = serializers.BooleanField(read_only=True)
 
     class Meta:
@@ -253,7 +253,7 @@ class FollowUserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "is_subscribed",
-            "receipts",
+            "recipe",
             "recipes_count",
             "avatar",
         )

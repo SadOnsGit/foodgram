@@ -1,9 +1,9 @@
 import django_filters
 
-from food.models import Receipts
+from food.models import Recipe
 
 
-class ReceiptFilter(django_filters.FilterSet):
+class RecipeFilter(django_filters.FilterSet):
     author = django_filters.CharFilter(
         field_name="author__username", lookup_expr="icontains"
     )
@@ -22,9 +22,9 @@ class ReceiptFilter(django_filters.FilterSet):
     def filter_in_favorites(self, queryset, name, value):
         if value == "1":
             user = self.request.user
-            return user.favorite_receipts.all()
+            return user.favorite_recipe.all()
         return queryset
 
     class Meta:
-        model = Receipts
+        model = Recipe
         fields = ["author", "tag", "in_shopping_list", "in_favorites"]
