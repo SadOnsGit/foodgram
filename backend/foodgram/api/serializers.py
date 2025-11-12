@@ -1,11 +1,12 @@
 from django.contrib.auth import authenticate, get_user_model
-from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
 
+from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 from .constants import (MAX_EMAIL_LENGTH, MAX_FIRST_NAME_LENGTH,
                         MAX_LAST_NAME_LENGTH)
 from .fields import Base64ImageField
+from users.models import Follow
 
 User = get_user_model()
 
@@ -57,7 +58,17 @@ class DetailUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
     )
-    is_subscribed = serializers.BooleanField(read_only=True)
+    is_subscribed = serializers.SerializerMethodField(read_only=True)
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+
+        return Follow.objects.filter(
+            user=request.user,
+            following=obj
+        ).exists()
 
     class Meta:
         model = User
