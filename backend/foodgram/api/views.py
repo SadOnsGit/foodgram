@@ -138,7 +138,10 @@ class NewUserViewSet(ModelViewSet):
                 return Response({"detail": "Вы уже подписаны!"}, status=400)
 
             Follow.objects.create(user=user, following=following)
-            serializer = FollowUserSerializer(following, context={"request": request})
+            serializer = FollowUserSerializer(
+                following,
+                context={"request": request}
+            )
             return Response(serializer.data, status=201)
 
         elif request.method == "DELETE":
@@ -167,10 +170,17 @@ class SetPassword(APIView):
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             user = request.user
-            if not user.check_password(serializer.validated_data["current_password"]):
-                return Response({"current_password": ["Wrong password."]}, status=400)
+            if not user.check_password(
+                serializer.validated_data["current_password"]
+            ):
+                return Response(
+                    {"current_password": ["Wrong password."]},
+                    status=400
+                )
 
-            user.password = make_password(serializer.validated_data["new_password"])
+            user.password = make_password(
+                serializer.validated_data["new_password"]
+            )
             user.save()
             return Response(status=204)
 
@@ -213,11 +223,16 @@ class RecipeViewSet(ModelViewSet):
         if user.is_authenticated:
             queryset = queryset.annotate(
                 is_subscribed=Exists(
-                    Follow.objects.filter(user=user, following=OuterRef("author_id"))
+                    Follow.objects.filter(
+                        user=user,
+                        following=OuterRef("author_id")
+                    )
                 )
             )
         else:
-            queryset = queryset.annotate(is_subscribed=Value(False, BooleanField()))
+            queryset = queryset.annotate(
+                is_subscribed=Value(False, BooleanField())
+            )
 
         return queryset
 
@@ -252,15 +267,24 @@ class FavoriteRecipeView(APIView):
                 },
                 status=201,
             )
-        return Response({"message": "Рецепт уже находится в избранном"}, status=400)
+        return Response(
+            {"message": "Рецепт уже находится в избранном"},
+            status=400
+        )
 
     def delete(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
         if user.favorite_recipe.filter(pk=recipe.pk).exists():
             user.favorite_recipe.remove(recipe)
-            return Response({"message": "Рецепт удален из избранного"}, status=204)
-        return Response({"message": "Рецепт не находится в избранном"}, status=400)
+            return Response(
+                {"message": "Рецепт удален из избранного"},
+                status=204
+            )
+        return Response(
+            {"message": "Рецепт не находится в избранном"},
+            status=400
+        )
 
 
 class PurchasedRecipeView(APIView):
@@ -289,8 +313,14 @@ class PurchasedRecipeView(APIView):
         user = self.request.user
         if user.purchases.filter(pk=recipe.pk).exists():
             user.purchases.remove(recipe)
-            return Response({"message": "Рецепт удален из списка покупок"}, status=204)
-        return Response({"message": "Рецепт не находится в списке покупок"}, status=400)
+            return Response(
+                {"message": "Рецепт удален из списка покупок"},
+                status=204
+            )
+        return Response(
+            {"message": "Рецепт не находится в списке покупок"},
+            status=400
+        )
 
 
 class IngredientsViewSet(ReadOnlyModelViewSet):
@@ -333,7 +363,13 @@ class DownloadShoppingCartUser(APIView):
             y_position -= 20
             if recipe.image:
                 image_path = recipe.image.path
-                p.drawImage(image_path, 100, y_position - 100, width=200, height=100)
+                p.drawImage(
+                    image_path,
+                    100,
+                    y_position - 100,
+                    width=200,
+                    height=100
+                )
                 y_position -= 120
             else:
                 y_position -= 60

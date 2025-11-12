@@ -24,7 +24,10 @@ class NewUser(AbstractUser):
     favorite_recipe = models.ManyToManyField(
         "food.Recipe", related_name="favorited_recipe"
     )
-    purchases = models.ManyToManyField("food.Recipe", related_name="purchased_recipe")
+    purchases = models.ManyToManyField(
+        "food.Recipe",
+        related_name="purchased_recipe"
+    )
 
 
 class Follow(models.Model):
