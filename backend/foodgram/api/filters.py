@@ -1,13 +1,14 @@
-from django_filters import FilterSet, CharFilter
+from django_filters import FilterSet, CharFilter, NumberFilter, MultipleChoiceFilter
 
-from food.models import Recipe, Ingredients
+from food.models import Recipe, Ingredients, Tags
 
 
 class RecipeFilter(FilterSet):
-    author = CharFilter(
-        field_name="author__username", lookup_expr="icontains"
+    author = NumberFilter(field_name="author__pk")
+    tags = MultipleChoiceFilter(
+        field_name="tags__slug",
+        choices=[(tag.slug, tag.slug) for tag in Tags.objects.all()]
     )
-    tag = CharFilter(field_name="tag", lookup_expr="icontains")
     in_shopping_list = CharFilter(method="filter_in_shopping_list")
     in_favorites = CharFilter(method="filter_in_favorites")
 
@@ -25,7 +26,7 @@ class RecipeFilter(FilterSet):
 
     class Meta:
         model = Recipe
-        fields = ["author", "tag", "in_shopping_list", "in_favorites"]
+        fields = ["author", "tags", "in_shopping_list", "in_favorites"]
 
 
 class IngredientFilter(FilterSet):

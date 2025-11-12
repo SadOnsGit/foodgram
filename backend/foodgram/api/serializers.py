@@ -189,9 +189,46 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         return RecipeSerializer(instance, context=self.context).data
 
     def validate(self, data):
-        ingredients = data.get("ingredients")
+        ingredients = data.get("ingredients", [])
+        tags = data.get("tags", [])
         if not ingredients:
-            raise serializers.ValidationError("Укажите хотя бы один ингредиент")
+            raise serializers.ValidationError({"ingredients": "Укажите хотя бы один ингредиент."})
+        if not tags:
+            raise serializers.ValidationError({"tags": "Укажите хотя бы один тег."})
+
+        ingredient_ids = set()
+        for i, item in enumerate(ingredients):
+            ing_id = item.get("id")
+            amount = item.get("amount")
+            if not amount or amount <= 0:
+                raise serializers.ValidationError({
+                    "ingredients": f"Количество для ингредиента id={ing_id} должно быть > 0."
+                })
+            if ing_id in ingredient_ids:
+                raise serializers.ValidationError({
+                    "ingredients": f"Ингредиент с id={ing_id} уже добавлен."
+                })
+            ingredient_ids.add(ing_id)
+
+        tag_ids = set()
+        for i, tag in enumerate(tags):
+            if not hasattr(tag, "id"):
+                raise serializers.ValidationError({
+                    "tags": f"Тег на позиции {i+1} не является объектом с id."
+                })
+            tag_id = tag.id
+            if tag_id in tag_ids:
+                raise serializers.ValidationError({
+                    "tags": f"Тег с id={tag_id} уже добавлен."
+                })
+            tag_ids.add(tag_id)
+
+        cooking_time = data.get("cooking_time")
+        if not cooking_time or cooking_time <= 0:
+            raise serializers.ValidationError({
+                "cooking_time": "Время приготовления должно быть больше 0."
+            })
+
         return data
 
     def create(self, validated_data):
