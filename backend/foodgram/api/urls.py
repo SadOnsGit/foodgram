@@ -2,17 +2,10 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .views import (
-    DownloadShoppingCartUser,
-    FavoriteRecipeView,
-    IngredientsViewSet,
-    LogoutView,
-    NewUserViewSet,
-    PurchasedRecipeView,
-    RecipeViewSet,
-    SetPassword,
-    TagsReadOnlyViewSet,
-)
+from .views import (DownloadShoppingCartUser, FavoriteRecipeView,
+                    IngredientsViewSet, LogoutView, NewUserViewSet,
+                    PurchasedRecipeView, RecipeViewSet, SetPassword,
+                    TagsReadOnlyViewSet)
 
 v1_router = DefaultRouter()
 v1_router.register("users", NewUserViewSet)

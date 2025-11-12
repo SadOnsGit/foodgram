@@ -3,7 +3,8 @@ from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .constants import MAX_EMAIL_LENGTH, MAX_FIRST_NAME_LENGTH, MAX_LAST_NAME_LENGTH
+from .constants import (MAX_EMAIL_LENGTH, MAX_FIRST_NAME_LENGTH,
+                        MAX_LAST_NAME_LENGTH)
 from .fields import Base64ImageField
 
 User = get_user_model()

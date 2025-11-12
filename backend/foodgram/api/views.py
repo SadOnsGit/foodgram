@@ -25,17 +25,11 @@ from users.models import Follow
 from .filters import RecipeFilter
 from .pagination import UserPageNumberPagination
 from .permissions import IsAuthorOrReadOnly, IsUserOrReadOnly
-from .serializers import (
-    ChangePasswordSerializer,
-    CreateRecipeSerializer,
-    CreateUserSerializer,
-    DetailUserSerializer,
-    FollowUserSerializer,
-    IngredientSerializer,
-    RecipeSerializer,
-    TagSerializer,
-    UpdateAvatarSerializer,
-)
+from .serializers import (ChangePasswordSerializer, CreateRecipeSerializer,
+                          CreateUserSerializer, DetailUserSerializer,
+                          FollowUserSerializer, IngredientSerializer,
+                          RecipeSerializer, TagSerializer,
+                          UpdateAvatarSerializer)
 from .utils import generate_unique_short_code
 
 User = get_user_model()
@@ -175,7 +169,6 @@ class SetPassword(APIView):
             user = request.user
             if not user.check_password(serializer.validated_data["current_password"]):
                 return Response({"current_password": ["Wrong password."]}, status=400)
-
             user.password = make_password(serializer.validated_data["new_password"])
             user.save()
             return Response(status=204)
@@ -349,7 +342,8 @@ class DownloadShoppingCartUser(APIView):
         buffer.seek(0)
 
         response = HttpResponse(buffer, content_type="application/pdf")
-        response["Content-Disposition"] = 'attachment; filename="shopping_cart.pdf"'
+        content_disposition = 'attachment; filename="shopping_cart.pdf"'
+        response["Content-Disposition"] = content_disposition
         return response
 
 
