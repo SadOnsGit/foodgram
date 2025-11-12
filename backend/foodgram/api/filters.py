@@ -1,14 +1,15 @@
-import django_filters
-from food.models import Recipe
+from django_filters import FilterSet, CharFilter
+
+from food.models import Recipe, Ingredients
 
 
-class RecipeFilter(django_filters.FilterSet):
-    author = django_filters.CharFilter(
+class RecipeFilter(FilterSet):
+    author = CharFilter(
         field_name="author__username", lookup_expr="icontains"
     )
-    tag = django_filters.CharFilter(field_name="tag", lookup_expr="icontains")
-    in_shopping_list = django_filters.CharFilter(method="filter_in_shopping_list")
-    in_favorites = django_filters.CharFilter(method="filter_in_favorites")
+    tag = CharFilter(field_name="tag", lookup_expr="icontains")
+    in_shopping_list = CharFilter(method="filter_in_shopping_list")
+    in_favorites = CharFilter(method="filter_in_favorites")
 
     def filter_in_shopping_list(self, queryset, name, value):
         if value == "1":
@@ -25,3 +26,11 @@ class RecipeFilter(django_filters.FilterSet):
     class Meta:
         model = Recipe
         fields = ["author", "tag", "in_shopping_list", "in_favorites"]
+
+
+class IngredientFilter(FilterSet):
+    name = CharFilter(lookup_expr='icontains')
+
+    class Meta:
+        model = Ingredients
+        fields = ['name']

@@ -22,7 +22,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from users.models import Follow
 
-from .filters import RecipeFilter
+from .filters import IngredientFilter, RecipeFilter
 from .pagination import UserPageNumberPagination
 from .permissions import IsAuthorOrReadOnly, IsUserOrReadOnly
 from .serializers import (ChangePasswordSerializer, CreateRecipeSerializer,
@@ -104,7 +104,7 @@ class NewUserViewSet(ModelViewSet):
     def avatar_actions(self, request, *args, **kwargs):
         if request.method == "PUT":
             serializer = self.get_serializer(
-                request.user, data=request.data, partial=True
+                request.user, data=request.data, partial=False
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -294,8 +294,8 @@ class PurchasedRecipeView(APIView):
 
 class IngredientsViewSet(ReadOnlyModelViewSet):
     queryset = Ingredients.objects.all()
-    filter_backends = [filters.SearchFilter]
-    search_fields = ["name"]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = IngredientFilter
     serializer_class = IngredientSerializer
 
 
