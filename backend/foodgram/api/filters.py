@@ -15,13 +15,13 @@ class RecipeFilter(FilterSet):
     def filter_in_shopping_list(self, queryset, name, value):
         if value == "1":
             user = self.request.user
-            return user.purchases.all()
+            return user.in_shopping_list.all()
         return queryset
 
     def filter_in_favorites(self, queryset, name, value):
         if value == "1":
             user = self.request.user
-            return user.favorite_recipe.all()
+            return user.in_favorite.all()
         return queryset
 
     class Meta:

@@ -138,7 +138,10 @@ class NewUserViewSet(ModelViewSet):
                 return Response({"detail": "Вы уже подписаны!"}, status=400)
 
             Follow.objects.create(user=user, following=following)
-            serializer = FollowUserSerializer(following, context={"request": request})
+            serializer = FollowUserSerializer(
+                following,
+                context={"request": request}
+            )
             return Response(serializer.data, status=201)
 
         elif request.method == "DELETE":
@@ -154,7 +157,9 @@ class NewUserViewSet(ModelViewSet):
     def subscriptions(self, request):
         follows = request.user.following.all()
         serializer = FollowUserSerializer(
-            follows, context={"request": request}, many=True
+            follows,
+            context={"request": request},
+            many=True
         )
         return Response(serializer.data, status=200)
 
@@ -183,7 +188,7 @@ class TagsReadOnlyViewSet(ReadOnlyModelViewSet):
 
 class RecipeViewSet(ModelViewSet):
     queryset = Recipe.objects.all().prefetch_related(
-        "favorited_recipe", "purchased_recipe"
+        "in_favorites", "in_shopping_list"
     )
     serializer_class = RecipeSerializer
     permission_classes = (IsAuthorOrReadOnly,)

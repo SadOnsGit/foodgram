@@ -278,7 +278,7 @@ class RecipeShortSerializer(serializers.ModelSerializer):
 
 class FollowUserSerializer(serializers.ModelSerializer):
     recipes_count = serializers.IntegerField(read_only=True)
-    recipe = RecipeShortSerializer(many=True, read_only=True)
+    recipes = serializers.SerializerMethodField()
     is_subscribed = serializers.BooleanField(read_only=True)
 
     class Meta:
@@ -290,7 +290,25 @@ class FollowUserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "is_subscribed",
-            "recipe",
+            "recipes",
             "recipes_count",
             "avatar",
         )
+
+    def get_recipes(self, obj):
+        request = self.context.get("request")
+        recipes_limit = request.query_params.get("recipes_limit")
+        limit = None
+        if recipes_limit is not None:
+            try:
+                limit = int(recipes_limit)
+                if limit < 0:
+                    limit = None
+            except ValueError:
+                limit = None
+
+        queryset = obj.recipe.all()
+        if limit:
+            queryset = queryset[:limit]
+
+        return RecipeShortSerializer(queryset, many=True, read_only=True).data
