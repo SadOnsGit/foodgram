@@ -19,6 +19,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework import filters
 from users.models import Follow
 
 from .filters import RecipeFilter
@@ -205,6 +206,21 @@ class RecipeViewSet(ModelViewSet):
             return CreateRecipeSerializer
         return RecipeSerializer
 
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset().select_related('author')
+
+        if user.is_authenticated:
+            queryset = queryset.annotate(
+                is_subscribed=Exists(
+                    Follow.objects.filter(user=user, following=OuterRef('author_id'))
+                )
+            )
+        else:
+            queryset = queryset.annotate(is_subscribed=Value(False, BooleanField()))
+
+        return queryset
+    
     @action(
         methods=("get",),
         detail=True,
@@ -279,7 +295,8 @@ class PurchasedRecipeView(APIView):
 
 class IngredientsViewSet(ReadOnlyModelViewSet):
     queryset = Ingredients.objects.all()
-    
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
     serializer_class = IngredientSerializer
 
 
