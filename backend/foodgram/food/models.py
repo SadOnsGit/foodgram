@@ -7,7 +7,11 @@ User = get_user_model()
 
 
 class Tags(models.Model):
-    name = models.CharField(max_length=25, unique=True, verbose_name="Название тега")
+    name = models.CharField(
+        max_length=25,
+        unique=True,
+        verbose_name="Название тега"
+    )
     slug = models.SlugField(unique=True, verbose_name="Слаг")
 
 
@@ -17,13 +21,17 @@ class Ingredients(models.Model):
         MG = "мг", "Миллиграм"
         G = "г", "грамм"
 
-    name = models.CharField(max_length=50, verbose_name="Ингредиенты")
+    name = models.CharField(max_length=50, verbose_name="Название")
     measurement_unit = models.CharField(
         max_length=2,
         choices=UnitMeasurement.choices,
         default=UnitMeasurement.G,
         verbose_name="Единица измерения",
     )
+
+    class Meta:
+        verbose_name = "Ингредиент"
+        verbose_name_plural = "Ингредиенты"
 
 
 class Recipe(models.Model):
@@ -34,7 +42,10 @@ class Recipe(models.Model):
         verbose_name="Автор",
     )
     name = models.CharField(max_length=150, verbose_name="Название рецепта")
-    image = models.ImageField(upload_to="recipe/", verbose_name="Картинка рецепта")
+    image = models.ImageField(
+        upload_to="recipe/",
+        verbose_name="Картинка рецепта"
+    )
     text = models.TextField(verbose_name="Описание")
     tags = models.ManyToManyField(Tags, verbose_name="Тэг")
     cooking_time = models.IntegerField()
@@ -46,11 +57,10 @@ class Recipe(models.Model):
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Дата публикации",
-        db_index=True,  # для производительности
     )
 
     class Meta:
-        ordering = ["-pub_date"]  # новые — выше
+        ordering = ["-pub_date"]
         verbose_name = "Рецепт"
         verbose_name_plural = "Рецепты"
 
@@ -61,3 +71,7 @@ class IngredientInRecipe(models.Model):
     )
     ingredient = models.ForeignKey(Ingredients, on_delete=models.CASCADE)
     amount = models.PositiveSmallIntegerField()
+
+    class Meta:
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты в рецепте'
