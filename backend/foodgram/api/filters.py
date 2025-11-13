@@ -8,10 +8,16 @@ class RecipeFilter(FilterSet):
     author = NumberFilter(field_name="author__pk")
     tags = MultipleChoiceFilter(
         field_name="tags__slug",
-        choices=[(tag.slug, tag.slug) for tag in Tags.objects.all()],
+        choices=[],
     )
     is_favorited = CharFilter(method="filter_is_favorited")
     is_in_shopping_cart = CharFilter(method="filter_is_in_shopping_cart")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.filters['tags'].extra['choices'] = [
+            (tag.slug, tag.name) for tag in Tags.objects.all()
+        ]
 
     def filter_is_favorited(self, queryset, name, value):
         user = self.request.user
