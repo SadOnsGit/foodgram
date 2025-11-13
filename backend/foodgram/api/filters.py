@@ -9,24 +9,24 @@ class RecipeFilter(FilterSet):
         field_name="tags__slug",
         choices=[(tag.slug, tag.slug) for tag in Tags.objects.all()]
     )
-    in_shopping_list = CharFilter(method="filter_in_shopping_list")
-    in_favorites = CharFilter(method="filter_in_favorites")
+    is_favorited = CharFilter(method="filter_is_favorited")
+    is_in_shopping_cart = CharFilter(method="filter_is_in_shopping_cart")
 
-    def filter_in_shopping_list(self, queryset, name, value):
-        if value == "1":
-            user = self.request.user
-            return user.in_shopping_list.all()
-        return queryset
+    def filter_is_favorited(self, queryset, name, value):
+        user = self.request.user
+        if not user.is_authenticated or value != "1":
+            return queryset
+        return queryset.filter(in_favorites=user)
 
-    def filter_in_favorites(self, queryset, name, value):
-        if value == "1":
-            user = self.request.user
-            return user.in_favorite.all()
-        return queryset
+    def filter_is_in_shopping_cart(self, queryset, name, value):
+        user = self.request.user
+        if not user.is_authenticated or value != "1":
+            return queryset
+        return queryset.filter(in_shopping_list=user)
 
     class Meta:
         model = Recipe
-        fields = ["author", "tags", "in_shopping_list", "in_favorites"]
+        fields = ["author", "tags", "is_favorited", "is_in_shopping_cart"]
 
 
 class IngredientFilter(FilterSet):

@@ -154,15 +154,21 @@ class NewUserViewSet(ModelViewSet):
         methods=["get"],
         url_path="subscriptions",
         permission_classes=[IsAuthenticated],
+        pagination_class=UserPageNumberPagination,
+        filter_backends=(DjangoFilterBackend,)
     )
     def subscriptions(self, request):
-        following_users = User.objects.filter(followers__user=request.user)
+        queryset = self.get_queryset().filter(followers__user=request.user)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = FollowUserSerializer(
+                page, many=True, context={"request": request}
+            )
+            return self.get_paginated_response(serializer.data)
         serializer = FollowUserSerializer(
-            following_users,
-            context={"request": request},
-            many=True
+            queryset, many=True, context={"request": request}
         )
-        return Response(serializer.data, status=200)
+        return Response(serializer.data)
 
 
 class SetPassword(APIView):

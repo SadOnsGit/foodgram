@@ -279,7 +279,7 @@ class RecipeShortSerializer(serializers.ModelSerializer):
 class FollowUserSerializer(serializers.ModelSerializer):
     recipes_count = serializers.IntegerField(read_only=True)
     recipes = serializers.SerializerMethodField()
-    is_subscribed = serializers.BooleanField(read_only=True)
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -312,3 +312,9 @@ class FollowUserSerializer(serializers.ModelSerializer):
             queryset = queryset[:limit]
 
         return RecipeShortSerializer(queryset, many=True, read_only=True).data
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return False
+        return Follow.objects.filter(user=request.user, following=obj).exists()
