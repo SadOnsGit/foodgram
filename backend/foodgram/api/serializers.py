@@ -1,11 +1,11 @@
 from django.contrib.auth import authenticate, get_user_model
-from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
-from users.models import Follow
 
+from users.models import Follow
 from .constants import (MAX_EMAIL_LENGTH, MAX_FIRST_NAME_LENGTH,
                         MAX_LAST_NAME_LENGTH)
+from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 from .fields import Base64ImageField
 
 User = get_user_model()

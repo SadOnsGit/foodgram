@@ -43,6 +43,16 @@ class Recipe(models.Model):
         verbose_name="Короткий код",
         unique=True,
     )
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата публикации",
+        db_index=True,  # для производительности
+    )
+
+    class Meta:
+        ordering = ["-pub_date"]  # новые — выше
+        verbose_name = "Рецепт"
+        verbose_name_plural = "Рецепты"
 
 
 class IngredientInRecipe(models.Model):
