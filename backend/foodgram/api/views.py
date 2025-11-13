@@ -14,7 +14,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
-from rest_framework import filters
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -37,7 +36,9 @@ User = get_user_model()
 
 def redirect_to_recipe(request, recipe_short_code):
     recipe = get_object_or_404(Recipe, short_code=recipe_short_code)
-    return HttpResponseRedirect(request.build_absolute_uri(f"/recipe/{recipe.id}/"))
+    return HttpResponseRedirect(
+        request.build_absolute_uri(f"/recipe/{recipe.id}/")
+    )
 
 
 class NewUserViewSet(ModelViewSet):
@@ -155,7 +156,7 @@ class NewUserViewSet(ModelViewSet):
         url_path="subscriptions",
         permission_classes=[IsAuthenticated],
         pagination_class=UserPageNumberPagination,
-        filter_backends=(DjangoFilterBackend,)
+        filter_backends=(DjangoFilterBackend,),
     )
     def subscriptions(self, request):
         queryset = self.get_queryset().filter(followers__user=request.user)
@@ -179,9 +180,16 @@ class SetPassword(APIView):
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             user = request.user
-            if not user.check_password(serializer.validated_data["current_password"]):
-                return Response({"current_password": ["Wrong password."]}, status=400)
-            user.password = make_password(serializer.validated_data["new_password"])
+            if not user.check_password(
+                serializer.validated_data["current_password"]
+            ):
+                return Response(
+                    {"current_password": ["Wrong password."]},
+                    status=400
+                )
+            user.password = make_password(
+                serializer.validated_data["new_password"]
+            )
             user.save()
             return Response(status=204)
 
@@ -248,15 +256,24 @@ class FavoriteRecipeView(APIView):
                 },
                 status=201,
             )
-        return Response({"message": "Рецепт уже находится в избранном"}, status=400)
+        return Response(
+            {"message": "Рецепт уже находится в избранном"},
+            status=400
+        )
 
     def delete(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
         if user.favorite_recipe.filter(pk=recipe.pk).exists():
             user.favorite_recipe.remove(recipe)
-            return Response({"message": "Рецепт удален из избранного"}, status=204)
-        return Response({"message": "Рецепт не находится в избранном"}, status=400)
+            return Response(
+                {"message": "Рецепт удален из избранного"},
+                status=204
+            )
+        return Response(
+            {"message": "Рецепт не находится в избранном"},
+            status=400
+        )
 
 
 class PurchasedRecipeView(APIView):
@@ -285,8 +302,14 @@ class PurchasedRecipeView(APIView):
         user = self.request.user
         if user.purchases.filter(pk=recipe.pk).exists():
             user.purchases.remove(recipe)
-            return Response({"message": "Рецепт удален из списка покупок"}, status=204)
-        return Response({"message": "Рецепт не находится в списке покупок"}, status=400)
+            return Response(
+                {"message": "Рецепт удален из списка покупок"},
+                status=204
+            )
+        return Response(
+            {"message": "Рецепт не находится в списке покупок"},
+            status=400
+        )
 
 
 class IngredientsViewSet(ReadOnlyModelViewSet):
@@ -329,7 +352,13 @@ class DownloadShoppingCartUser(APIView):
             y_position -= 20
             if recipe.image:
                 image_path = recipe.image.path
-                p.drawImage(image_path, 100, y_position - 100, width=200, height=100)
+                p.drawImage(
+                    image_path,
+                    100,
+                    y_position - 100,
+                    width=200,
+                    height=100
+                )
                 y_position -= 120
             else:
                 y_position -= 60

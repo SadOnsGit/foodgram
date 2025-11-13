@@ -1,13 +1,13 @@
-from django_filters import FilterSet, CharFilter, NumberFilter, MultipleChoiceFilter
-
-from food.models import Recipe, Ingredients, Tags
+from django_filters import (CharFilter, FilterSet, MultipleChoiceFilter,
+                            NumberFilter)
+from food.models import Ingredients, Recipe, Tags
 
 
 class RecipeFilter(FilterSet):
     author = NumberFilter(field_name="author__pk")
     tags = MultipleChoiceFilter(
         field_name="tags__slug",
-        choices=[(tag.slug, tag.slug) for tag in Tags.objects.all()]
+        choices=[(tag.slug, tag.slug) for tag in Tags.objects.all()],
     )
     is_favorited = CharFilter(method="filter_is_favorited")
     is_in_shopping_cart = CharFilter(method="filter_is_in_shopping_cart")
@@ -30,8 +30,8 @@ class RecipeFilter(FilterSet):
 
 
 class IngredientFilter(FilterSet):
-    name = CharFilter(lookup_expr='icontains')
+    name = CharFilter(lookup_expr="icontains")
 
     class Meta:
         model = Ingredients
-        fields = ['name']
+        fields = ["name"]
