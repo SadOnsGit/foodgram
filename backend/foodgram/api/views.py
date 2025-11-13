@@ -145,8 +145,9 @@ class NewUserViewSet(ModelViewSet):
             return Response(serializer.data, status=201)
 
         elif request.method == "DELETE":
-            get_object_or_404(Follow, user=user, following=following).delete()
-            return Response(status=204)
+            if Follow.objects.filter(user=user, following=following).exists():
+                return Response(status=204)
+            return Response(status=400)
 
     @action(
         detail=False,
@@ -155,9 +156,9 @@ class NewUserViewSet(ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def subscriptions(self, request):
-        follows = request.user.following.all()
+        following_users = User.objects.filter(followers__user=request.user)
         serializer = FollowUserSerializer(
-            follows,
+            following_users,
             context={"request": request},
             many=True
         )
