@@ -9,11 +9,11 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
+SECRET_KEY = os.environ.get('SECRET_KEY', get_random_secret_key())
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False')
 
-ALLOWED_HOSTS = ["84.201.155.162", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 
 INSTALLED_APPS = [
