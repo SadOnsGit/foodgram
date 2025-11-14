@@ -348,7 +348,7 @@ class DownloadShoppingCartUser(APIView):
                 f"Время готовки: {recipe.cooking_time} minutes",
             )
             y_position -= 20
-            p.drawString(100, y_position, f"Изображение: ")
+            p.drawString(100, y_position, "Изображение: ")
             y_position -= 20
             if recipe.image:
                 image_path = recipe.image.path
