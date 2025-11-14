@@ -4,7 +4,8 @@
 
 <img width="981" height="977" alt="image" src="https://github.com/user-attachments/assets/f7788f65-1bd3-449b-82da-15da521276c0" />
 
-
+# Адрес сервера
+http://84.201.155.162/
 
 ## Foodgram — это социальная сеть, где пользователи могут:
 - Регистрироваться и входить (Djoser, токены)
