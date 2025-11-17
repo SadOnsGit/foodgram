@@ -55,11 +55,17 @@ class Recipe(models.Model):
         max_length=SHORT_CODE_URLS_MAX_LENGTH,
         verbose_name="Короткий код",
         unique=True,
+        null=True,
     )
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Дата публикации",
     )
+
+    def save(self, *args, **kwargs):
+        if not self.short_code:
+            self.short_code = self.generate_unique_short_code()
+        super().save(*args, **kwargs)
 
     @staticmethod
     def generate_unique_short_code(length):

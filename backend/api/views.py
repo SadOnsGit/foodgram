@@ -13,7 +13,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
@@ -28,7 +28,7 @@ from .permissions import IsAuthorOrReadOnly
 from .serializers import (ChangePasswordSerializer, CreateRecipeSerializer,
                           DetailUserSerializer,
                           FollowUserSerializer, IngredientSerializer,
-                          RecipeSerializer, TagSerializer,
+                          RecipeSerializer, RecipeShortSerializer, TagSerializer,
                           UpdateAvatarSerializer)
 
 User = get_user_model()
@@ -166,19 +166,10 @@ class RecipeViewSet(ModelViewSet):
         "in_favorites", "in_shopping_list"
     )
     serializer_class = RecipeSerializer
-    permission_classes = (IsAuthorOrReadOnly,)
+    permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly,)
     pagination_class = UserPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
-
-    def perform_create(self, serializer):
-        code = Recipe.generate_unique_short_code()
-        serializer.save(short_code=code)
-
-    def get_permissions(self):
-        if self.request.method == "POST":
-            self.permission_classes = (IsAuthenticated,)
-        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.request.method in ["POST", "PATCH"]:
@@ -198,33 +189,24 @@ class RecipeViewSet(ModelViewSet):
 
         return Response({"short-link": full_url}, status=status.HTTP_200_OK)
 
-
-class FavoriteRecipeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, pk):
+    @action(
+        methods=("post", "delete"),
+        detail=True,
+        url_path="favorite",
+        permission_classes=[IsAuthenticated],
+    )
+    def favorite_recipe(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
-        if not user.favorite_recipe.filter(pk=recipe.pk).exists():
+        if request.method == 'POST':
+            if user.favorite_recipe.filter(pk=pk).exists():
+                return Response(
+                    {"message": "Рецепт уже находится в избранном"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             user.favorite_recipe.add(recipe)
-            return Response(
-                {
-                    "id": recipe.pk,
-                    "name": recipe.name,
-                    "image": request.build_absolute_uri(recipe.image.url),
-                    "cooking_time": recipe.cooking_time,
-                },
-                status=status.HTTP_201_CREATED,
-            )
-        return Response(
-            {"message": "Рецепт уже находится в избранном"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def delete(self, request, pk):
-        recipe = get_object_or_404(Recipe, pk=pk)
-        user = self.request.user
-        if user.favorite_recipe.filter(pk=recipe.pk).exists():
+            return RecipeShortSerializer(recipe)
+        if user.favorite_recipe.filter(pk=pk).exists():
             user.favorite_recipe.remove(recipe)
             return Response(
                 {"message": "Рецепт удален из избранного"},
