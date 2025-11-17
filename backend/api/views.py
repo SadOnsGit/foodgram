@@ -8,8 +8,6 @@ from django.http import HttpResponse
 from django.shortcuts import HttpResponseRedirect, get_object_or_404
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
-from food.constants import SHORT_CODE_URLS_MAX_LENGTH
-from food.models import Ingredients, Recipe, Tags
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -19,8 +17,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from users.models import Follow
 
+from users.models import Follow
+from food.constants import SHORT_CODE_URLS_MAX_LENGTH
+from food.models import Ingredients, Recipe, Tags
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import UserPageNumberPagination
 from .permissions import IsAuthorOrReadOnly, IsUserOrReadOnly
