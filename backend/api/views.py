@@ -21,7 +21,7 @@ from rest_framework import status
 
 from users.models import Follow
 from food.constants import SHORT_CODE_URLS_MAX_LENGTH
-from food.models import Ingredients, Recipe, Tags
+from food.models import FavoriteRecipe, Ingredients, Recipe, ShoppingListRecipe, Tags
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import UserPageNumberPagination
 from .permissions import IsAuthorOrReadOnly
@@ -199,58 +199,64 @@ class RecipeViewSet(ModelViewSet):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
         if request.method == 'POST':
-            if user.favorite_recipe.filter(pk=pk).exists():
+            _, created = FavoriteRecipe.objects.get_or_create(
+                recipe=recipe,
+                user=user
+            )
+            if created:
+                serializer = RecipeShortSerializer(recipe)
                 return Response(
-                    {"message": "Рецепт уже находится в избранном"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
                 )
-            user.favorite_recipe.add(recipe)
-            return RecipeShortSerializer(recipe)
-        if user.favorite_recipe.filter(pk=pk).exists():
-            user.favorite_recipe.remove(recipe)
             return Response(
-                {"message": "Рецепт удален из избранного"},
-                status=status.HTTP_204_NO_CONTENT
+                {"message": "Рецепт уже находится в избранном"},
+                status=status.HTTP_400_BAD_REQUEST
             )
+        deleted_count, _ = FavoriteRecipe.objects.filter(
+            user=user,
+            recipe=recipe
+        ).delete()
+        if deleted_count:
+            return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
-            {"message": "Рецепт не находится в избранном"},
-            status=status.HTTP_400_BAD_REQUEST
+            {"detail": "Рецепт не находится в избранном."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
-
-class PurchasedRecipeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, pk):
+    @action(
+        methods=("post", "delete"),
+        detail=True,
+        url_path="shopping_cart",
+        permission_classes=[IsAuthenticated],
+    )
+    def shopping_cart(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
-        if not user.purchases.filter(pk=recipe.pk).exists():
-            user.purchases.add(recipe)
-            return Response(
-                {
-                    "id": recipe.pk,
-                    "name": recipe.name,
-                    "image": request.build_absolute_uri(recipe.image.url),
-                    "cooking_time": recipe.cooking_time,
-                },
-                status.HTTP_201_CREATED,
+        if request.method == 'POST':
+            _, created = ShoppingListRecipe.objects.get_or_create(
+                recipe=recipe,
+                user=user
             )
-        return Response(
-            {"message": "Рецепт уже находится в списке покупок"}, status=400
-        )
-
-    def delete(self, request, pk):
-        recipe = get_object_or_404(Recipe, pk=pk)
-        user = self.request.user
-        if user.purchases.filter(pk=recipe.pk).exists():
-            user.purchases.remove(recipe)
+            if created:
+                serializer = RecipeShortSerializer(recipe)
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
             return Response(
-                {"message": "Рецепт удален из списка покупок"},
-                status=status.HTTP_204_NO_CONTENT
+                {"message": "Рецепт уже находится в корзине"},
+                status=status.HTTP_400_BAD_REQUEST
             )
+        deleted_count, _ = ShoppingListRecipe.objects.filter(
+            user=user,
+            recipe=recipe
+        ).delete()
+        if deleted_count:
+            return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
-            {"message": "Рецепт не находится в списке покупок"},
-            status=status.HTTP_400_BAD_REQUEST
+            {"detail": "Рецепт не находится в корзине."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 
