@@ -1,3 +1,5 @@
+import random
+import string
 from django.contrib.auth import get_user_model
 from django.db import models
 
@@ -58,6 +60,14 @@ class Recipe(models.Model):
         auto_now_add=True,
         verbose_name="Дата публикации",
     )
+
+    @staticmethod
+    def generate_unique_short_code(length):
+        chars = string.ascii_letters + string.digits
+        while True:
+            code = "".join(random.choices(chars, k=length))
+            if not Recipe.objects.filter(short_code=code).exists():
+                return code
 
     class Meta:
         ordering = ["-pub_date"]

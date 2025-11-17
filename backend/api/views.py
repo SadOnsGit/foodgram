@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.db.models import BooleanField, Count, Exists, OuterRef, Value
 from django.http import HttpResponse
-from django.shortcuts import HttpResponseRedirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from reportlab.lib.pagesizes import letter
@@ -17,38 +17,37 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework import status
 
 from users.models import Follow
 from food.constants import SHORT_CODE_URLS_MAX_LENGTH
 from food.models import Ingredients, Recipe, Tags
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import UserPageNumberPagination
-from .permissions import IsAuthorOrReadOnly, IsUserOrReadOnly
+from .permissions import IsAuthorOrReadOnly
 from .serializers import (ChangePasswordSerializer, CreateRecipeSerializer,
-                          CreateUserSerializer, DetailUserSerializer,
+                          DetailUserSerializer,
                           FollowUserSerializer, IngredientSerializer,
                           RecipeSerializer, TagSerializer,
                           UpdateAvatarSerializer)
-from .utils import generate_unique_short_code
 
 User = get_user_model()
 
 
 def redirect_to_recipe(request, recipe_short_code):
-    recipe = get_object_or_404(Recipe, short_code=recipe_short_code)
-    return HttpResponseRedirect(
-        request.build_absolute_uri(f"/recipe/{recipe.id}/")
-    )
+    try:
+        recipe = Recipe.objects.get(short_code=recipe_short_code)
+        return redirect('recipe_detail', recipe.id)
+    except Recipe.DoesNotExist:
+        return redirect('/not-found/')
 
 
-class NewUserViewSet(ModelViewSet):
+class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
+    serializer_class = DetailUserSerializer
     pagination_class = UserPageNumberPagination
     http_method_names = ["get", "post", "put", "delete"]
-
-    def destroy(self, request, *args, **kwargs):
-        return Response({"detail": "Method Not Allowed"}, status=405)
 
     def get_queryset(self):
         user = self.request.user
@@ -66,20 +65,6 @@ class NewUserViewSet(ModelViewSet):
                 is_subscribed=Value(False, output_field=BooleanField())
             )
         return queryset
-
-    def get_permissions(self):
-        if self.action in ["update"]:
-            self.permission_classes = [IsUserOrReadOnly]
-        return super().get_permissions()
-
-    def get_serializer_class(self):
-        if self.action == "create":
-            return CreateUserSerializer
-        if self.action in ["retrieve", "list", "me"]:
-            return DetailUserSerializer
-        if self.action == "avatar_actions":
-            return UpdateAvatarSerializer
-        return DetailUserSerializer
 
     @action(
         detail=False,
@@ -110,14 +95,9 @@ class NewUserViewSet(ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
-
-        elif request.method == "DELETE":
-            request.user.avatar = None
-            request.user.save()
-            return Response(status=204)
-
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+        request.user.avatar = None
+        request.user.save()
+        return Response(status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=True,
@@ -135,20 +115,24 @@ class NewUserViewSet(ModelViewSet):
                     {"detail": "Нельзя подписаться на самого себя!"},
                     status=400,
                 )
-            if Follow.objects.filter(user=user, following=following).exists():
-                return Response({"detail": "Вы уже подписаны!"}, status=400)
-
-            Follow.objects.create(user=user, following=following)
+            follow, created = Follow.objects.get_or_create(
+                user=user,
+                following=following
+            )
+            if not created:
+                return Response(
+                    {"detail": "Вы уже подписаны!"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             serializer = FollowUserSerializer(
                 following,
                 context={"request": request}
             )
-            return Response(serializer.data, status=201)
-
-        elif request.method == "DELETE":
-            if Follow.objects.filter(user=user, following=following).exists():
-                return Response(status=204)
-            return Response(status=400)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if Follow.objects.filter(user=user, following=following).exists():
+            Follow.objects.filter(user=user, following=following).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         detail=False,
@@ -172,30 +156,6 @@ class NewUserViewSet(ModelViewSet):
         return Response(serializer.data)
 
 
-class SetPassword(APIView):
-
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serializer = ChangePasswordSerializer(data=request.data)
-        if serializer.is_valid():
-            user = request.user
-            if not user.check_password(
-                serializer.validated_data["current_password"]
-            ):
-                return Response(
-                    {"current_password": ["Wrong password."]},
-                    status=400
-                )
-            user.password = make_password(
-                serializer.validated_data["new_password"]
-            )
-            user.save()
-            return Response(status=204)
-
-        return Response(serializer.errors, status=400)
-
-
 class TagsReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = Tags.objects.all()
     serializer_class = TagSerializer
@@ -212,8 +172,8 @@ class RecipeViewSet(ModelViewSet):
     filterset_class = RecipeFilter
 
     def perform_create(self, serializer):
-        code = generate_unique_short_code(SHORT_CODE_URLS_MAX_LENGTH)
-        serializer.save(author=self.request.user, short_code=code)
+        code = Recipe.generate_unique_short_code()
+        serializer.save(short_code=code)
 
     def get_permissions(self):
         if self.request.method == "POST":
@@ -236,7 +196,7 @@ class RecipeViewSet(ModelViewSet):
         relative_url = reverse("redirect_to_recipe", args=[recipe.short_code])
         full_url = request.build_absolute_uri(relative_url)
 
-        return Response({"short-link": full_url}, status=200)
+        return Response({"short-link": full_url}, status=status.HTTP_200_OK)
 
 
 class FavoriteRecipeView(APIView):
@@ -254,11 +214,11 @@ class FavoriteRecipeView(APIView):
                     "image": request.build_absolute_uri(recipe.image.url),
                     "cooking_time": recipe.cooking_time,
                 },
-                status=201,
+                status=status.HTTP_201_CREATED,
             )
         return Response(
             {"message": "Рецепт уже находится в избранном"},
-            status=400
+            status=status.HTTP_400_BAD_REQUEST
         )
 
     def delete(self, request, pk):
@@ -268,11 +228,11 @@ class FavoriteRecipeView(APIView):
             user.favorite_recipe.remove(recipe)
             return Response(
                 {"message": "Рецепт удален из избранного"},
-                status=204
+                status=status.HTTP_204_NO_CONTENT
             )
         return Response(
             {"message": "Рецепт не находится в избранном"},
-            status=400
+            status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -291,7 +251,7 @@ class PurchasedRecipeView(APIView):
                     "image": request.build_absolute_uri(recipe.image.url),
                     "cooking_time": recipe.cooking_time,
                 },
-                status=201,
+                status.HTTP_201_CREATED,
             )
         return Response(
             {"message": "Рецепт уже находится в списке покупок"}, status=400
@@ -304,11 +264,11 @@ class PurchasedRecipeView(APIView):
             user.purchases.remove(recipe)
             return Response(
                 {"message": "Рецепт удален из списка покупок"},
-                status=204
+                status=status.HTTP_204_NO_CONTENT
             )
         return Response(
             {"message": "Рецепт не находится в списке покупок"},
-            status=400
+            status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -376,4 +336,4 @@ class DownloadShoppingCartUser(APIView):
 class LogoutView(APIView):
 
     def post(self, request):
-        return Response({"detail": "Выход выполнен успешно."}, status=204)
+        return Response({"detail": "Выход выполнен успешно."}, status=status.HTTP_204_NO_CONTENT)

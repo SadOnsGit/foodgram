@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from .constants import USERNAME_MAX_LENGTH, MAX_EMAIL_LENGTH
+from .constants import USERNAME_MAX_LENGTH, MAX_EMAIL_LENGTH, MAX_FIRST_NAME_LENGTH, MAX_LAST_NAME_LENGTH
 from .validators import validate_username
 
 
@@ -13,6 +13,12 @@ class NewUser(AbstractUser):
         error_messages={
             "unique": ("Пользователь с таким username уже существует!"),
         },
+    )
+    first_name = models.CharField(
+        max_length=MAX_FIRST_NAME_LENGTH,
+    )
+    last_name = models.CharField(
+        max_length=MAX_LAST_NAME_LENGTH,
     )
     email = models.EmailField(
         max_length=MAX_EMAIL_LENGTH,

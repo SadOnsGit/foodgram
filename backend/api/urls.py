@@ -7,11 +7,11 @@ from .views import (DownloadShoppingCartUser, FavoriteRecipeView,
                     PurchasedRecipeView, RecipeViewSet, SetPassword,
                     TagsReadOnlyViewSet)
 
-v1_router = DefaultRouter()
-v1_router.register("users", NewUserViewSet)
-v1_router.register("recipes", RecipeViewSet)
-v1_router.register("tags", TagsReadOnlyViewSet)
-v1_router.register("ingredients", IngredientsViewSet)
+router = DefaultRouter()
+router.register("users", NewUserViewSet)
+router.register("recipes", RecipeViewSet)
+router.register("tags", TagsReadOnlyViewSet)
+router.register("ingredients", IngredientsViewSet)
 
 urlpatterns = [
     path(
@@ -30,5 +30,5 @@ urlpatterns = [
         "recipes/download_shopping_cart/",
         DownloadShoppingCartUser.as_view()
     ),
-    path("", include(v1_router.urls)),
+    path("", include(router.urls)),
 ]
