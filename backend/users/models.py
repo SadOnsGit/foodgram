@@ -5,7 +5,9 @@ from .constants import USERNAME_MAX_LENGTH, MAX_EMAIL_LENGTH, MAX_FIRST_NAME_LEN
 from .validators import validate_username
 
 
-class NewUser(AbstractUser):
+class User(AbstractUser):
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
     username = models.CharField(
         max_length=USERNAME_MAX_LENGTH,
         unique=True,
@@ -32,11 +34,14 @@ class NewUser(AbstractUser):
 
 class Follow(models.Model):
     user = models.ForeignKey(
-        NewUser, on_delete=models.CASCADE, related_name="following"
+        User, on_delete=models.CASCADE, related_name="following"
     )
     following = models.ForeignKey(
-        NewUser, on_delete=models.CASCADE, related_name="followers"
+        User, on_delete=models.CASCADE, related_name="followers"
     )
+
+    def __str__(self):
+        return f"{self.user} подписан на {self.following}"
 
     class Meta:
         constraints = [

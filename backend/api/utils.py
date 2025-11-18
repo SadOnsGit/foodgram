@@ -14,45 +14,51 @@ def generate_shopping_cart_pdf(user):
     p = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
 
-    # Подключаем шрифт с поддержкой кириллицы
-    font_path = os.path.join(settings.BASE_DIR, "fonts", "DejaVuSans.ttf")
-    if not os.path.exists(font_path):
-        raise FileNotFoundError(f"Шрифт не найден: {font_path}")
-
+    font_path = os.path.join("fonts", "DejaVuSans.ttf")
     pdfmetrics.registerFont(TTFont("DejaVu", font_path))
-    p.setFont("DejaVu", 14)
-
-    # Заголовок
-    p.drawCenteringText(width / 2, height - 40 * mm, "Список покупок")
     p.setFont("DejaVu", 12)
-    y = height - 60 * mm
 
-    recipes = user.user_shopping_cart.select_related('recipe').all()
+    all_obj_shopping_cart = user.user_shopping_cart_recipes.all()
+    p.drawString(100, height - 100, "Список покупок рецептов")
+    y_position = height - 130
 
-    for recipe in recipes:
-        recipe = recipe.recipe  # если у тебя связь через промежуточную модель
-
-        p.drawString(20 * mm, y, f"• {recipe.name}")
-        y -= 7 * mm
-
-        p.setFont("DejaVu", 10)
-        p.setFillGray(0.4)
+    for recipe in all_obj_shopping_cart:
+        p.drawString(100, y_position, f"Номер: {recipe.id}")
+        y_position -= 20
+        p.drawString(100, y_position, f"Название: {recipe.name}")
+        y_position -= 20
+        p.drawString(100, y_position, f"Описание: {recipe.text}")
+        y_position -= 20
+        ingredients = ", ".join([
+            f"{amount.amount} {amount.ingredient.unit} {amount.ingredient.name}"
+            for amount in recipe.recipe_ingredients.select_related('ingredient').all()
+        ])
         p.drawString(
-            25 * mm,
-            y,
-            f"    Готовка: {recipe.cooking_time} мин",
+            100,
+            y_position,
+            f"Ингредиенты: {ingredients}"
         )
-        y -= 6 * mm
-        p.setFillGray(0)
-        p.setFont("DejaVu", 12)
-
-        if y < 50 * mm:  # переходим на новую страницу, если места мало
-            p.showPage()
-            p.setFont("DejaVu", 12)
-            y = height - 40 * mm
-
-        y -= 10 * mm  # отступ между рецептами
-
+        y_position -= 20
+        p.drawString(
+            100,
+            y_position,
+            f"Время готовки: {recipe.cooking_time} minutes",
+        )
+        y_position -= 20
+        p.drawString(100, y_position, "Изображение: ")
+        y_position -= 20
+        if recipe.image:
+            image_path = recipe.image.path
+            p.drawImage(
+                image_path,
+                100,
+                y_position - 100,
+                width=200,
+                height=100
+            )
+            y_position -= 120
+        else:
+            y_position -= 60
     p.showPage()
     p.save()
     buffer.seek(0)

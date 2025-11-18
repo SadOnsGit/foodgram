@@ -13,18 +13,7 @@ User = get_user_model()
 
 
 class DetailUserSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.SerializerMethodField(read_only=True)
-
-    def get_is_subscribed(self, obj):
-        request = self.context.get("request")
-        return (
-            request
-            and request.user.is_authenticated
-            and obj
-            and Follow.objects.filter(
-                user=request.user, following=obj
-            ).exists()
-        )
+    is_subscribed = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = User
@@ -112,15 +101,17 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class IngredientInRecipeSerializer(serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(source="ingredient", read_only=True)
-    name = serializers.ReadOnlyField(source="ingredient.name")
-    measurement_unit = serializers.ReadOnlyField(
-        source="ingredient.measurement_unit"
+    id = serializers.PrimaryKeyRelatedField(
+        queryset=Ingredients.objects.all(),
+        source='ingredient'
     )
+    name = serializers.CharField(source='ingredient.name', read_only=True)
+    measurement_unit = serializers.CharField(source='ingredient.measurement_unit', read_only=True)
+    amount = serializers.IntegerField(min_value=1)
 
     class Meta:
         model = IngredientInRecipe
-        fields = ("id", "name", "measurement_unit", "amount")
+        fields = ('id', 'name', 'measurement_unit', 'amount')
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -173,76 +164,62 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         queryset=Tags.objects.all(),
         many=True
     )
-    ingredients = IngredientInRecipeSerializer(source='recipe_ingredients')
+    ingredients = IngredientInRecipeSerializer(
+        many=True
+    )
 
     def to_representation(self, instance):
         return RecipeSerializer(instance, context=self.context).data
 
-    def validate(self, data):
-        ingredients = data.get("ingredients", [])
-        tags = data.get("tags", [])
-        if not ingredients:
-            raise serializers.ValidationError(
-                {"ingredients": "Укажите хотя бы один ингредиент."}
-            )
-        if not tags:
-            raise serializers.ValidationError(
-                {"tags": "Укажите хотя бы один тег."}
-            )
+    def validate_ingredients(self, value):
+        if not value:
+            raise serializers.ValidationError("Нужно указать хотя бы один ингредиент.")
+        return value
 
-        ingredient_ids = set()
-        for i, item in enumerate(ingredients):
-            ing_id = item.get("id")
-            if ing_id in ingredient_ids:
-                raise serializers.ValidationError(
-                    {"ingredients": f"Ингредиент с id={ing_id} уже добавлен."}
-                )
-            ingredient_ids.add(ing_id)
-
-        if len(tags) > set(tags):
-            raise serializers.ValidationError(
-                {"tags": f"Тег уже добавлен."}
-            )
-        return data
+    def validate_tags(self, value):
+        if not value:
+            raise serializers.ValidationError("Нужно выбрать хотя бы один тег.")
+        return value
 
     @transaction.atomic
     def create(self, validated_data):
         ingredients_data = validated_data.pop("ingredients")
         tags_data = validated_data.pop("tags")
-        request = self.context.get("request")
-        recipe = Recipe.objects.create(**validated_data, author=request.user)
+        recipe = Recipe.objects.create(author=self.context["request"].user, **validated_data)
         recipe.tags.set(tags_data)
-        ingredient_objects = [
+
+        IngredientInRecipe.objects.bulk_create([
             IngredientInRecipe(
                 recipe=recipe,
-                ingredient_id=item["id"],
-                amount=item["amount"],
+                ingredient=item["ingredient"],
+                amount=item["amount"]
             )
             for item in ingredients_data
-        ]
-        IngredientInRecipe.objects.bulk_create(ingredient_objects)
-
+        ])
         return recipe
+
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop("ingredients")
-        tags_data = validated_data.pop("tags")
+        ingredients_data = validated_data.pop("ingredients", None)
+        tags_data = validated_data.pop("tags", None)
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
         if tags_data is not None:
             instance.tags.set(tags_data)
-        instance.recipe_ingredients.all().delete()
 
-        ingredient_objects = [
-            IngredientInRecipe(
-                recipe=instance,
-                ingredient_id=item["id"],
-                amount=item["amount"],
-            )
-            for item in ingredients_data
-        ]
-        IngredientInRecipe.objects.bulk_create(ingredient_objects)
+        if ingredients_data is not None:
+            instance.recipe_ingredients.all().delete()
+            IngredientInRecipe.objects.bulk_create([
+                IngredientInRecipe(
+                    recipe=instance,
+                    ingredient=item["ingredient"],   # ← ТОТ ЖЕ КЛЮЧ, что и в create!
+                    amount=item["amount"]
+                )
+                for item in ingredients_data
+            ])
 
         instance.save()
         return instance

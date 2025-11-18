@@ -129,12 +129,19 @@ SIMPLE_JWT = {
     "TOKEN_OBTAIN_SERIALIZER": "api.serializers.NewTokenObtainPairSerializer",
 }
 
-AUTH_USER_MODEL = "users.NewUser"
+AUTH_USER_MODEL = "users.User"
 
 DJOSER = {
     "LOGIN_FIELD": "email",
+    "HIDE_USERS": False,
     "SERIALIZERS": {
+        "user": "api.serializers.DetailUserSerializer",
+        "current_user": "api.serializers.DetailUserSerializer",
         "token": "api.serializers.NewTokenObtainPairSerializer",
+    },
+    "PERMISSIONS": {
+        "user": ["rest_framework.permissions.AllowAny"],
+        "user_list": ["rest_framework.permissions.AllowAny"],
     },
 }
 

@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -30,6 +31,7 @@ from .serializers import (ChangePasswordSerializer, CreateRecipeSerializer,
                           FollowUserSerializer, IngredientSerializer,
                           RecipeSerializer, RecipeShortSerializer, TagSerializer,
                           UpdateAvatarSerializer)
+from .utils import generate_shopping_cart_pdf
 
 User = get_user_model()
 
@@ -42,7 +44,7 @@ def redirect_to_recipe(request, recipe_short_code):
         return redirect('/not-found/')
 
 
-class UserViewSet(ModelViewSet):
+class UserViewSet(UserViewSet):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = DetailUserSerializer
@@ -97,7 +99,7 @@ class UserViewSet(ModelViewSet):
             return Response(serializer.data)
         request.user.avatar = None
         request.user.save()
-        return Response(status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=True,
@@ -113,7 +115,7 @@ class UserViewSet(ModelViewSet):
             if user == following:
                 return Response(
                     {"detail": "Нельзя подписаться на самого себя!"},
-                    status=400,
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             follow, created = Follow.objects.get_or_create(
                 user=user,
@@ -163,7 +165,7 @@ class TagsReadOnlyViewSet(ReadOnlyModelViewSet):
 
 class RecipeViewSet(ModelViewSet):
     queryset = Recipe.objects.all().prefetch_related(
-        "in_favorites", "in_shopping_list"
+        "recipe_add_favorite_by", "cart_add_by"
     )
     serializer_class = RecipeSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly,)
@@ -259,6 +261,19 @@ class RecipeViewSet(ModelViewSet):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    @action(
+        methods=("get",),
+        detail=False,
+        url_path="download_shopping_cart",
+        permission_classes=[IsAuthenticated],
+    )
+    def download_shopping_cart(self, request):
+        buffer = generate_shopping_cart_pdf(self.request.user)
+        response = HttpResponse(buffer, content_type="application/pdf")
+        content_disposition = 'attachment; filename="shopping_cart.pdf"'
+        response["Content-Disposition"] = content_disposition
+        return response
+
 
 class IngredientsViewSet(ReadOnlyModelViewSet):
     queryset = Ingredients.objects.all()
@@ -267,61 +282,6 @@ class IngredientsViewSet(ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
 
 
-class DownloadShoppingCartUser(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        buffer = BytesIO()
-        p = canvas.Canvas(buffer, pagesize=letter)
-        width, height = letter
-
-        font_path = os.path.join("fonts", "DejaVuSans.ttf")
-        pdfmetrics.registerFont(TTFont("DejaVu", font_path))
-        p.setFont("DejaVu", 12)
-
-        all_obj_shopping_cart = self.request.user.purchases.all()
-        p.drawString(100, height - 100, "Список покупок рецептов")
-        y_position = height - 130
-
-        for recipe in all_obj_shopping_cart:
-            p.drawString(100, y_position, f"Номер: {recipe.id}")
-            y_position -= 20
-            p.drawString(100, y_position, f"Название: {recipe.name}")
-            y_position -= 20
-            p.drawString(100, y_position, f"Описание: {recipe.text}")
-            y_position -= 20
-            p.drawString(
-                100,
-                y_position,
-                f"Время готовки: {recipe.cooking_time} minutes",
-            )
-            y_position -= 20
-            p.drawString(100, y_position, "Изображение: ")
-            y_position -= 20
-            if recipe.image:
-                image_path = recipe.image.path
-                p.drawImage(
-                    image_path,
-                    100,
-                    y_position - 100,
-                    width=200,
-                    height=100
-                )
-                y_position -= 120
-            else:
-                y_position -= 60
-
-        p.showPage()
-        p.save()
-        buffer.seek(0)
-
-        response = HttpResponse(buffer, content_type="application/pdf")
-        content_disposition = 'attachment; filename="shopping_cart.pdf"'
-        response["Content-Disposition"] = content_disposition
-        return response
-
-
 class LogoutView(APIView):
-
     def post(self, request):
-        return Response({"detail": "Выход выполнен успешно."}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"detail": "Выход выполнен успешно."}, status=204)

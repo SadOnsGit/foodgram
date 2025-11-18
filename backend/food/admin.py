@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import UserAdmin
 from django.db.models import Count
 
 from .models import IngredientInRecipe, Ingredients, Recipe, Tags
@@ -8,7 +9,7 @@ User = get_user_model()
 
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(UserAdmin):
     search_fields = ('username', 'email')
 
 
@@ -31,16 +32,13 @@ class IngredientInRecipeAdmin(admin.ModelAdmin):
 class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author__username', 'author__email')
     list_filter = ('tags',)
+    list_display = ('name', 'author', 'favorites_count')
+    readonly_fields = ('favorites_count',)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.annotate(_favorites_count=Count('in_favorites'))
+        return qs.annotate(_favorites_count=Count('recipe_created_by'))
 
+    @admin.display(description='В избранном', ordering='_favorites_count')
     def favorites_count(self, obj):
-        return obj._favorites_count
-
-    favorites_count.short_description = 'В избранном'
-    favorites_count.admin_order_field = '_favorites_count'
-
-    list_display = ('name', 'author', 'favorites_count')
-    readonly_fields = ('favorites_count',)
+        return obj._favorites_count or 0
