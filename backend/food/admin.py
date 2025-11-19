@@ -10,12 +10,12 @@ User = get_user_model()
 
 @admin.register(User)
 class UserAdmin(UserAdmin):
-    search_fields = ('username', 'email')
+    search_fields = ("username", "email")
 
 
 @admin.register(Ingredients)
 class IngredientsAdmin(admin.ModelAdmin):
-    search_fields = ('name',)
+    search_fields = ("name",)
 
 
 @admin.register(Tags)
@@ -30,15 +30,15 @@ class IngredientInRecipeAdmin(admin.ModelAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    search_fields = ('name', 'author__username', 'author__email')
-    list_filter = ('tags',)
-    list_display = ('name', 'author', 'favorites_count')
-    readonly_fields = ('favorites_count',)
+    search_fields = ("name", "author__username", "author__email")
+    list_filter = ("tags",)
+    list_display = ("name", "author", "favorites_count")
+    readonly_fields = ("favorites_count",)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.annotate(_favorites_count=Count('recipe_created_by'))
+        return qs.annotate(_favorites_count=Count("favorited_by"))
 
-    @admin.display(description='В избранном', ordering='_favorites_count')
+    @admin.display(description="В избранном", ordering="_favorites_count")
     def favorites_count(self, obj):
         return obj._favorites_count or 0

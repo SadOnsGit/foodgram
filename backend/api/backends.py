@@ -3,9 +3,7 @@ from django.contrib.auth.backends import ModelBackend
 
 
 class EmailBackend(ModelBackend):
-    def authenticate(
-            self, request, username=None, password=None, email=None, **kwargs
-    ):
+    def authenticate(self, request, username=None, password=None, email=None, **kwargs):
         UserModel = get_user_model()
         login_email = email or username
         if not login_email:

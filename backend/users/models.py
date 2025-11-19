@@ -1,13 +1,18 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from .constants import USERNAME_MAX_LENGTH, MAX_EMAIL_LENGTH, MAX_FIRST_NAME_LENGTH, MAX_LAST_NAME_LENGTH
+from .constants import (
+    MAX_EMAIL_LENGTH,
+    MAX_FIRST_NAME_LENGTH,
+    MAX_LAST_NAME_LENGTH,
+    USERNAME_MAX_LENGTH,
+)
 from .validators import validate_username
 
 
 class User(AbstractUser):
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username", "first_name", "last_name"]
     username = models.CharField(
         max_length=USERNAME_MAX_LENGTH,
         unique=True,
@@ -33,9 +38,7 @@ class User(AbstractUser):
 
 
 class Follow(models.Model):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="following"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="following")
     following = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="followers"
     )
