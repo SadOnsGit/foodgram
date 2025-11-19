@@ -3,8 +3,6 @@ from django.db import transaction
 from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
-from users.constants import (MAX_EMAIL_LENGTH, MAX_FIRST_NAME_LENGTH,
-                             MAX_LAST_NAME_LENGTH)
 from users.models import Follow
 
 from .fields import Base64ImageField
@@ -96,11 +94,6 @@ class NewTokenObtainPairSerializer(serializers.Serializer):
         return {"auth_token": str(access_token)}
 
 
-class ChangePasswordSerializer(serializers.Serializer):
-    current_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
-
-
 class TagSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -189,7 +182,9 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
 
     def validate_tags(self, value):
         if not value:
-            raise serializers.ValidationError("Нужно выбрать хотя бы один тег.")
+            raise serializers.ValidationError(
+                "Нужно выбрать хотя бы один тег."
+            )
         tag_ids = [tag.id if hasattr(tag, "id") else tag for tag in value]
         if len(tag_ids) != len(set(tag_ids)):
             raise serializers.ValidationError("Теги не должны повторяться!")
