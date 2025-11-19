@@ -98,3 +98,30 @@ jobs:
             sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
             sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic
             sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/collected_static/. /backend_static/
+            # 2. Новый блок — автоматический выпуск/продление сертификатов
+            echo "Запускаем/обновляем Let's Encrypt сертификаты через certbot..."
+
+            # Создаём временную директорию для webroot-челленджа, если ещё нет
+            sudo mkdir -p /var/www/_letsencrypt
+
+            # Пытаемся выпустить новый сертификат или продлить существующий
+            # --webroot — самый надёжный и простой способ для Nginx
+            sudo docker run --rm \
+              -v letsencrypt_etc:/etc/letsencrypt \
+              -v letsencrypt_var:/var/lib/letsencrypt \
+              -v /var/www/_letsencrypt:/webroot \
+              --name certbot \
+              certbot/certbot:latest certonly \
+                --webroot -w /webroot \
+                -d $PROD_DOMAIN \
+                -d www.$PROD_DOMAIN \    # если нужен www тоже
+                --email $LETSENCRYPT_EMAIL \
+                --agree-tos \
+                --non-interactive \
+                --keep-until-expiring \
+                || true   # если уже есть действующий сертификат — просто пропустит
+
+            # Перезапускаем nginx, чтобы он подхватил новые сертификаты
+            sudo docker compose -f docker-compose.production.yml restart nginx
+
+            echo "Сертификаты успешно получены/продлены для $PROD_DOMAIN"
