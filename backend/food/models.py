@@ -11,7 +11,11 @@ User = get_user_model()
 
 
 class Tags(models.Model):
-    name = models.CharField(max_length=32, unique=True, verbose_name="Название тега")
+    name = models.CharField(
+        max_length=32,
+        unique=True,
+        verbose_name="Название тега"
+    )
     slug = models.SlugField(max_length=32, unique=True, verbose_name="Слаг")
 
     def __str__(self):
@@ -37,7 +41,8 @@ class Ingredients(models.Model):
         verbose_name_plural = "Ингредиенты"
         constraints = [
             models.UniqueConstraint(
-                fields=["name", "measurement_unit"], name="unique_ingredient_with_unit"
+                fields=["name", "measurement_unit"],
+                name="unique_ingredient_with_unit"
             )
         ]
 
@@ -50,7 +55,10 @@ class Recipe(models.Model):
         verbose_name="Автор",
     )
     name = models.CharField(max_length=256, verbose_name="Название рецепта")
-    image = models.ImageField(upload_to="recipe/", verbose_name="Картинка рецепта")
+    image = models.ImageField(
+        upload_to="recipe/",
+        verbose_name="Картинка рецепта"
+    )
     text = models.TextField(verbose_name="Описание")
     tags = models.ManyToManyField(Tags, verbose_name="Тэг")
     cooking_time = models.PositiveSmallIntegerField(
@@ -58,7 +66,8 @@ class Recipe(models.Model):
         validators=[
             MinValueValidator(1),
             MaxValueValidator(
-                1000, message="Время приготовления не может превышать 1000 минут."
+                1000,
+                message="Время приготовления не может превышать 1000 минут."
             ),
         ],
         help_text="Укажите время в минутах (минимум 1 минута)",
@@ -112,7 +121,7 @@ class IngredientInRecipe(models.Model):
 
     def __str__(self):
         return (
-            f"{self.ingredient.name} — {self.amount} {self.ingredient.measurement_unit}"
+            f"{self.ingredient.name} — {self.amount}"
         )
 
     class Meta:
@@ -121,7 +130,11 @@ class IngredientInRecipe(models.Model):
 
 
 class FavoriteRecipe(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="favorites")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="favorites"
+    )
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE, related_name="favorited_by"
     )
@@ -131,7 +144,11 @@ class FavoriteRecipe(models.Model):
 
 
 class ShoppingListRecipe(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="purchases")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="purchases"
+    )
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE, related_name="shopping_cart_by"
     )

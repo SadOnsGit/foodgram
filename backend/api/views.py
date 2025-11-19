@@ -1,46 +1,29 @@
-import os
-from io import BytesIO
-
 from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import make_password
-from django.db.models import BooleanField, Count, Exists, OuterRef, Value
+from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from food.constants import SHORT_CODE_URLS_MAX_LENGTH
-from food.models import FavoriteRecipe, Ingredients, Recipe, ShoppingListRecipe, Tags
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import (
-    AllowAny,
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly,
-)
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from users.models import Follow
 
+from users.models import Follow
+from food.models import (FavoriteRecipe, Ingredients, Recipe,
+                         ShoppingListRecipe, Tags)
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import UserPageNumberPagination
 from .permissions import IsAuthorOrReadOnly
-from .serializers import (
-    ChangePasswordSerializer,
-    CreateRecipeSerializer,
-    DetailUserSerializer,
-    FollowUserSerializer,
-    IngredientSerializer,
-    RecipeSerializer,
-    RecipeShortSerializer,
-    TagSerializer,
-    UpdateAvatarSerializer,
-)
+from .serializers import (CreateRecipeSerializer,
+                          DetailUserSerializer, FollowUserSerializer,
+                          IngredientSerializer, RecipeSerializer,
+                          RecipeShortSerializer, TagSerializer,
+                          UpdateAvatarSerializer)
 from .utils import generate_shopping_cart_pdf
 
 User = get_user_model()
@@ -124,7 +107,10 @@ class UserViewSet(UserViewSet):
                     {"detail": "Вы уже подписаны!"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            serializer = FollowUserSerializer(following, context={"request": request})
+            serializer = FollowUserSerializer(
+                following,
+                context={"request": request}
+            )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         if Follow.objects.filter(user=user, following=following).exists():
             Follow.objects.filter(user=user, following=following).delete()
@@ -159,7 +145,9 @@ class TagsReadOnlyViewSet(ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(ModelViewSet):
-    queryset = Recipe.objects.all().prefetch_related("favorited_by", "shopping_cart_by")
+    queryset = Recipe.objects.all().prefetch_related(
+        "favorited_by", "shopping_cart_by"
+    )
     serializer_class = RecipeSerializer
     permission_classes = (
         IsAuthenticatedOrReadOnly,
@@ -197,10 +185,16 @@ class RecipeViewSet(ModelViewSet):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = self.request.user
         if request.method == "POST":
-            _, created = FavoriteRecipe.objects.get_or_create(recipe=recipe, user=user)
+            _, created = FavoriteRecipe.objects.get_or_create(
+                recipe=recipe,
+                user=user
+            )
             if created:
                 serializer = RecipeShortSerializer(recipe)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
             return Response(
                 {"message": "Рецепт уже находится в избранном"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -230,7 +224,10 @@ class RecipeViewSet(ModelViewSet):
             )
             if created:
                 serializer = RecipeShortSerializer(recipe)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
             return Response(
                 {"message": "Рецепт уже находится в корзине"},
                 status=status.HTTP_400_BAD_REQUEST,

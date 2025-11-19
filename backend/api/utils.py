@@ -2,7 +2,6 @@ import os
 from io import BytesIO
 
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -31,7 +30,7 @@ def generate_shopping_cart_pdf(user):
         y_position -= 20
         ingredients = ", ".join(
             [
-                f"{amount.amount} {amount.ingredient.measurement_unit} {amount.ingredient.name}"
+                f"{amount.amount} {amount.ingredient.name}"
                 for amount in recipe.recipe_ingredients.select_related(
                     "ingredient"
                 ).all()
@@ -49,7 +48,13 @@ def generate_shopping_cart_pdf(user):
         y_position -= 20
         if recipe.image:
             image_path = recipe.image.path
-            p.drawImage(image_path, 100, y_position - 100, width=200, height=100)
+            p.drawImage(
+                image_path,
+                100,
+                y_position - 100,
+                width=200,
+                height=100
+            )
             y_position -= 120
         else:
             y_position -= 60

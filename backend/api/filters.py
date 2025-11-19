@@ -1,10 +1,6 @@
-from django_filters.rest_framework import (
-    BooleanFilter,
-    CharFilter,
-    FilterSet,
-    MultipleChoiceFilter,
-    NumberFilter,
-)
+from django_filters.rest_framework import (BooleanFilter, CharFilter,
+                                           FilterSet, MultipleChoiceFilter,
+                                           NumberFilter)
 from food.models import Ingredients, Recipe
 
 

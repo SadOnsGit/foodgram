@@ -3,11 +3,8 @@ from django.db import transaction
 from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
-from users.constants import (
-    MAX_EMAIL_LENGTH,
-    MAX_FIRST_NAME_LENGTH,
-    MAX_LAST_NAME_LENGTH,
-)
+from users.constants import (MAX_EMAIL_LENGTH, MAX_FIRST_NAME_LENGTH,
+                             MAX_LAST_NAME_LENGTH)
 from users.models import Follow
 
 from .fields import Base64ImageField
@@ -21,7 +18,9 @@ class DetailUserSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         request = self.context.get("request")
         if request and request.user.is_authenticated and obj:
-            return Follow.objects.filter(user=request.user, following=obj).exists()
+            return Follow.objects.filter(
+                user=request.user, following=obj
+            ).exists()
         return False
 
     class Meta:
@@ -178,10 +177,14 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
 
     def validate_ingredients(self, value):
         if not value:
-            raise serializers.ValidationError("Нужно указать хотя бы один ингредиент.")
+            raise serializers.ValidationError(
+                "Нужно указать хотя бы один ингредиент."
+            )
         ingredient_ids = [item["ingredient"].id for item in value]
         if len(ingredient_ids) != len(set(ingredient_ids)):
-            raise serializers.ValidationError("Ингредиенты не должны повторяться!")
+            raise serializers.ValidationError(
+                "Ингредиенты не должны повторяться!"
+            )
         return value
 
     def validate_tags(self, value):
@@ -204,7 +207,8 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         IngredientInRecipe.objects.bulk_create(
             [
                 IngredientInRecipe(
-                    recipe=recipe, ingredient=item["ingredient"], amount=item["amount"]
+                    recipe=recipe, ingredient=item["ingredient"],
+                    amount=item["amount"]
                 )
                 for item in ingredients_data
             ]
