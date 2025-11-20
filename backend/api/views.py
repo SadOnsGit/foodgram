@@ -112,8 +112,10 @@ class UserViewSet(UserViewSet):
                 context={"request": request}
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if Follow.objects.filter(user=user, following=following).exists():
-            Follow.objects.filter(user=user, following=following).delete()
+        deleted_count, _ = Follow.objects.filter(
+            user=user, following=following
+        ).delete()
+        if deleted_count:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 

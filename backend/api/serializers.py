@@ -1,10 +1,10 @@
 from django.contrib.auth import authenticate, get_user_model
 from django.db import transaction
-from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import AccessToken
-from users.models import Follow
 
+from food.models import IngredientInRecipe, Ingredients, Recipe, Tags
+from users.models import Follow
 from .fields import Base64ImageField
 
 User = get_user_model()
@@ -15,11 +15,13 @@ class DetailUserSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get("request")
-        if request and request.user.is_authenticated and obj:
-            return Follow.objects.filter(
+        return (
+            request
+            and request.user.is_authenticated
+            and Follow.objects.filter(
                 user=request.user, following=obj
             ).exists()
-        return False
+        )
 
     class Meta:
         model = User
@@ -109,7 +111,6 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.CharField(
         source="ingredient.measurement_unit", read_only=True
     )
-    amount = serializers.IntegerField(min_value=1)
 
     class Meta:
         model = IngredientInRecipe
@@ -128,15 +129,19 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, obj):
         request = self.context["request"]
-        if request and request.user.is_authenticated and obj:
-            return request.user.favorites.filter(pk=obj.pk).exists()
-        return False
+        return (
+            request
+            and request.user.is_authenticated
+            and request.user.favorites.filter(pk=obj.pk).exists()
+        )
 
     def get_is_in_shopping_cart(self, obj):
         request = self.context["request"]
-        if request and request.user.is_authenticated and obj:
-            return request.user.purchases.filter(pk=obj.pk).exists()
-        return False
+        return (
+            request
+            and request.user.is_authenticated
+            and request.user.purchases.filter(pk=obj.pk).exists()
+        )
 
     class Meta:
         model = Recipe
@@ -168,37 +173,29 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return RecipeSerializer(instance, context=self.context).data
 
-    def validate_ingredients(self, value):
-        if not value:
+    def validate(self, attrs):
+        ingredients = attrs.get('ingredients')
+        ingredient_ids = [item.ingredient.id for item in ingredients]
+        tags = attrs.get('tags')
+
+        if not ingredients:
             raise serializers.ValidationError(
-                "Нужно указать хотя бы один ингредиент."
+                {"ingredients": "Нужно указать хотя бы один ингредиент."}
             )
-        ingredient_ids = [item["ingredient"].id for item in value]
+
         if len(ingredient_ids) != len(set(ingredient_ids)):
             raise serializers.ValidationError(
-                "Ингредиенты не должны повторяться!"
+                {"ingredients": "Ингредиенты не должны повторяться!"}
             )
-        return value
-
-    def validate_tags(self, value):
-        if not value:
+        if not tags:
             raise serializers.ValidationError(
                 "Нужно выбрать хотя бы один тег."
             )
-        tag_ids = [tag.id if hasattr(tag, "id") else tag for tag in value]
-        if len(tag_ids) != len(set(tag_ids)):
+        if len(tags) != len(set(tags)):
             raise serializers.ValidationError("Теги не должны повторяться!")
-        return value
+        return attrs
 
-    @transaction.atomic
-    def create(self, validated_data):
-        ingredients_data = validated_data.pop("ingredients")
-        tags_data = validated_data.pop("tags")
-        recipe = Recipe.objects.create(
-            author=self.context["request"].user, **validated_data
-        )
-        recipe.tags.set(tags_data)
-
+    def add_ingredients(ingredients_data, recipe):
         IngredientInRecipe.objects.bulk_create(
             [
                 IngredientInRecipe(
@@ -208,38 +205,27 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
                 for item in ingredients_data
             ]
         )
+
+    @transaction.atomic
+    def create(self, validated_data):
+        ingredients_data = validated_data.pop("ingredients")
+        tags_data = validated_data.pop("tags")
+        recipe = Recipe.objects.create(
+            author=self.context["request"].user, **validated_data
+        )
+        self.add_ingredients(ingredients_data, recipe)
+        recipe.tags.set(tags_data)
         return recipe
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop("ingredients", None)
-        tags_data = validated_data.pop("tags", None)
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        if tags_data is not None:
-            instance.tags.set(tags_data)
-        else:
-            raise serializers.ValidationError("Нет тегов")
-
-        if ingredients_data is not None:
-            instance.recipe_ingredients.all().delete()
-            IngredientInRecipe.objects.bulk_create(
-                [
-                    IngredientInRecipe(
-                        recipe=instance,
-                        ingredient=item["ingredient"],
-                        amount=item["amount"],
-                    )
-                    for item in ingredients_data
-                ]
-            )
-        else:
-            raise serializers.ValidationError("Нет ингредиентов")
-
-        instance.save()
+        ingredients_data = validated_data.pop('ingredients', None)
+        tags_data = validated_data.pop('tags', None)
+        instance = super().update(instance, validated_data)
+        instance.tags.set(tags_data)
+        self.add_ingredients(ingredients_data, instance)
         return instance
+
 
     class Meta:
         model = Recipe
