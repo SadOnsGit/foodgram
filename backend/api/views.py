@@ -177,71 +177,54 @@ class RecipeViewSet(ModelViewSet):
 
         return Response({"short-link": full_url}, status=status.HTTP_200_OK)
 
-    @action(
-        methods=("post", "delete"),
-        detail=True,
-        url_path="favorite",
-        permission_classes=[IsAuthenticated],
-    )
-    def favorite_recipe(self, request, pk):
+    def _toggle_relation(self, request, pk, model, relation_name):
         recipe = get_object_or_404(Recipe, pk=pk)
-        user = self.request.user
+        user = request.user
+
         if request.method == "POST":
-            _, created = FavoriteRecipe.objects.get_or_create(
-                recipe=recipe,
-                user=user
+            obj, created = model.objects.get_or_create(
+                user=user, recipe=recipe
             )
             if created:
                 serializer = RecipeShortSerializer(recipe)
                 return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
+                    serializer.data, status=status.HTTP_201_CREATED
                 )
             return Response(
-                {"message": "Рецепт уже находится в избранном"},
+                {"detail": f"Рецепт уже в {relation_name}."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        deleted_count, _ = FavoriteRecipe.objects.filter(
+
+        deleted_count, _ = model.objects.filter(
             user=user, recipe=recipe
         ).delete()
         if deleted_count:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
-            {"detail": "Рецепт не находится в избранном."},
+            {"detail": f"Рецепт не находится в {relation_name}."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
     @action(
-        methods=("post", "delete"),
+        methods=["post", "delete"],
+        detail=True,
+        url_path="favorite",
+        permission_classes=[IsAuthenticated],
+    )
+    def favorite(self, request, pk=None):
+        return self._toggle_relation(
+            request, pk, FavoriteRecipe, "избранном"
+        )
+
+    @action(
+        methods=["post", "delete"],
         detail=True,
         url_path="shopping_cart",
         permission_classes=[IsAuthenticated],
     )
-    def shopping_cart(self, request, pk):
-        recipe = get_object_or_404(Recipe, pk=pk)
-        user = self.request.user
-        if request.method == "POST":
-            _, created = ShoppingListRecipe.objects.get_or_create(
-                recipe=recipe, user=user
-            )
-            if created:
-                serializer = RecipeShortSerializer(recipe)
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
-            return Response(
-                {"message": "Рецепт уже находится в корзине"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        deleted_count, _ = ShoppingListRecipe.objects.filter(
-            user=user, recipe=recipe
-        ).delete()
-        if deleted_count:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            {"detail": "Рецепт не находится в корзине."},
-            status=status.HTTP_400_BAD_REQUEST,
+    def shopping_cart(self, request, pk=None):
+        return self._toggle_relation(
+            request, pk, ShoppingListRecipe, "корзине"
         )
 
     @action(
