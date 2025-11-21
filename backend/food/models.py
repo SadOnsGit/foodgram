@@ -129,7 +129,8 @@ class IngredientInRecipe(models.Model):
         validators=[
             MinValueValidator(MIN_AMOUNT_INGREDIENT),
             MaxValueValidator(
-                MAX_AMOUNT_INGREDIENT, message="Кол-во ингредиентов не может превышать 32767!"
+                MAX_AMOUNT_INGREDIENT,
+                message="Кол-во ингредиентов не может превышать 32767!"
             ),
         ],
     )

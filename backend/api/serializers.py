@@ -226,7 +226,6 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         self.add_ingredients(ingredients_data, instance)
         return instance
 
-
     class Meta:
         model = Recipe
         fields = (
