@@ -10,7 +10,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         base_dir = Path(__file__).resolve().parent.parent.parent.parent.parent
-        file_path = base_dir / "data" / "ingredients.json"
+        file_path = base_dir / "ingredients.json"
 
         if not file_path.exists():
             self.stdout.write(self.style.ERROR(f"Файл не найден: {file_path}"))
