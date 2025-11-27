@@ -195,7 +195,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Теги не должны повторяться!")
         return attrs
 
-    def add_ingredients(ingredients_data, recipe):
+    def add_ingredients(self, ingredients_data, recipe):
         IngredientInRecipe.objects.bulk_create(
             [
                 IngredientInRecipe(
