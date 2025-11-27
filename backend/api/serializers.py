@@ -175,7 +175,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         ingredients = attrs.get('ingredients')
-        ingredient_ids = [item.ingredient.id for item in ingredients]
+        ingredient_ids = [item['ingredient'].id for item in ingredients]
         tags = attrs.get('tags')
 
         if not ingredients:
