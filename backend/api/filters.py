@@ -1,14 +1,16 @@
 from django_filters.rest_framework import (BooleanFilter, CharFilter,
-                                           FilterSet, MultipleChoiceFilter,
+                                           FilterSet, ModelMultipleChoiceFilter,
                                            NumberFilter)
-from food.models import Ingredients, Recipe
+from food.models import Ingredients, Recipe, Tags
 
 
 class RecipeFilter(FilterSet):
     author = NumberFilter(field_name="author__id")
-    tags = MultipleChoiceFilter(
+    tags = ModelMultipleChoiceFilter(
         field_name="tags__slug",
-        choices=[],
+        to_field_name="slug",
+        queryset=Tags.objects.all(),
+        conjoined=True,
     )
     is_favorited = BooleanFilter(method="filter_is_favorited")
     is_in_shopping_cart = BooleanFilter(method="filter_is_in_shopping_cart")
