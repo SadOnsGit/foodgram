@@ -1,5 +1,6 @@
 from django_filters.rest_framework import (BooleanFilter, CharFilter,
-                                           FilterSet, ModelMultipleChoiceFilter,
+                                           FilterSet,
+                                           ModelMultipleChoiceFilter,
                                            NumberFilter)
 from food.models import Ingredients, Recipe, Tags
 

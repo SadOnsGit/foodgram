@@ -193,7 +193,9 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
                     "Нужно выбрать хотя бы один тег."
                 )
             if len(tags) != len(set(tags)):
-                raise serializers.ValidationError("Теги не должны повторяться!")
+                raise serializers.ValidationError(
+                    "Теги не должны повторяться!"
+                )
             return attrs
 
     def add_ingredients(self, ingredients_data, recipe):
