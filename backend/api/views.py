@@ -32,7 +32,7 @@ User = get_user_model()
 def redirect_to_recipe(request, recipe_short_code):
     try:
         recipe = Recipe.objects.get(short_code=recipe_short_code)
-        return redirect(f"/recipe/{recipe.id}")
+        return redirect(f"/recipes/{recipe.id}")
     except Recipe.DoesNotExist:
         return redirect("/not-found/")
 
